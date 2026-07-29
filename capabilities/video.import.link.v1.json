@@ -1,0 +1,84 @@
+{
+  "action_id": "video.import.link.v1",
+  "title": "Import source video from copied link",
+  "version": 1,
+  "source": {
+    "type": "local_cli",
+    "canonical_name": "henghe-cat-meowload",
+    "entry": "meowload download <url> --output-dir <import_dir>"
+  },
+  "execution": {
+    "adapter": "node-main-process",
+    "module": "src/main/video-link-importer.js",
+    "ipc": "replication:import-video-link"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "url"
+    ],
+    "properties": {
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "allowed_protocols": [
+          "http",
+          "https"
+        ]
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "path",
+      "metadata"
+    ],
+    "properties": {
+      "path": {
+        "type": "string",
+        "format": "absolute-path"
+      },
+      "metadata": {
+        "type": "object"
+      },
+      "source_link": {
+        "type": "string",
+        "format": "uri"
+      }
+    }
+  },
+  "effects": {
+    "class": "local_write_network_read",
+    "paid": false,
+    "external_write": false,
+    "publication": false
+  },
+  "controls": {
+    "progress": true,
+    "cancel": false,
+    "retry": true,
+    "resume": false
+  },
+  "runtime": {
+    "timeout_seconds": 900,
+    "concurrency": 1,
+    "state_store": "userData/link-imports/<import_id>",
+    "logs": [
+      "meowload-info.log",
+      "meowload-download.log"
+    ]
+  },
+  "validation": {
+    "type": "source_video_contract",
+    "rules": [
+      "http_or_https_url",
+      "downloaded_file_exists",
+      "file_size_gt_zero",
+      "ffprobe_video_stream",
+      "ffprobe_audio_stream",
+      "vertical_video",
+      "max_15_seconds"
+    ]
+  }
+}

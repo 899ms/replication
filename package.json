@@ -1,0 +1,26 @@
+{
+  "name": "replication",
+  "version": "0.1.0",
+  "description": "A focused desktop app that turns one source video into three publishable replicas.",
+  "main": "src/main/index.js",
+  "author": "abo",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "guard": "node scripts/guard-path.js",
+    "start": "npm run guard && electron .",
+    "test": "node --test tests/*.test.js",
+    "test:integration": "npm run guard && node scripts/smoke-prepare.js",
+    "icon:build": "png2icons assets/icon-1024.png assets/Replication -icns -bc",
+    "sign:mac": "codesign --force --deep --sign - dist/Replication-darwin-arm64/Replication.app",
+    "build:mac": "npm run guard && npm run icon:build && electron-packager . Replication --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true --download.cacheRoot=/private/tmp/replication-electron-cache --app-bundle-id=com.abo.replication --app-category-type=public.app-category.video --app-version=0.1.0 --icon=assets/Replication --ignore='^/(runtime|dist|tests|scripts|assets/Replication\\.iconset)' && npm run sign:mac"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.0.4",
+    "electron": "39.8.10",
+    "png2icons": "^2.0.1"
+  },
+  "allowScripts": {
+    "electron@39.8.10": true
+  }
+}

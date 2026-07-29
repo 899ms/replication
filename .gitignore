@@ -1,0 +1,15 @@
+node_modules/
+dist/
+runtime/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+*.mp4
+*.mov
+*.m4v
+*.mp3
+*.wav
+*.log
+.DS_Store

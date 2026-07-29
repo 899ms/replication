@@ -1,0 +1,93 @@
+{
+  "action_id": "video.replication.generate.v1",
+  "title": "Generate three video replicas",
+  "version": 1,
+  "source": {
+    "type": "composite_skill",
+    "canonical_name": "replication-local-hook-face-voice",
+    "skills": [
+      "golden-three-second-hook",
+      "hook-only-rewriter",
+      "seedance-face-swap"
+    ],
+    "entry": "/Users/abo/.codex/skills/seedance-face-swap/scripts"
+  },
+  "execution": {
+    "adapter": "python-cli",
+    "prepare_entry": "create_face_swap_contract.py",
+    "submit_entry": "submit_face_swap_task.py",
+    "qa_entry": "final_qa.py"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "video_path",
+      "person_image_path",
+      "audio_reference_path"
+    ],
+    "properties": {
+      "video_path": {
+        "type": "string",
+        "format": "absolute-path"
+      },
+      "person_image_path": {
+        "type": "string",
+        "format": "absolute-path"
+      },
+      "audio_reference_path": {
+        "type": "string",
+        "format": "absolute-path"
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "run_id",
+      "artifacts"
+    ],
+    "properties": {
+      "run_id": {
+        "type": "string"
+      },
+      "artifacts": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3
+      }
+    }
+  },
+  "effects": {
+    "class": "paid_external_generation",
+    "paid": true,
+    "external_write": true,
+    "publication": false
+  },
+  "controls": {
+    "progress": true,
+    "cancel": true,
+    "cancel_scope": "local_tracking_only",
+    "retry": false,
+    "resume": true,
+    "paid_authorization_required": true,
+    "authorized_job_count": 3
+  },
+  "runtime": {
+    "timeout_seconds": 3600,
+    "concurrency": 3,
+    "idempotency": "run_id_plus_variant_id",
+    "state_store": "userData/runs/<run_id>/run.json"
+  },
+  "validation": {
+    "type": "video_artifact_contract",
+    "rules": [
+      "file_exists",
+      "runtime_person_image_exists",
+      "audio_reference_exists",
+      "file_size_gt_zero",
+      "ffprobe_video_stream",
+      "ffprobe_audio_stream",
+      "provider_audio_reference_bound"
+    ]
+  }
+}

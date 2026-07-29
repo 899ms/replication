@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' file:; img-src 'self' file: data:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    />
+    <title>Replication</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="rail">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="brand-square brand-square-back"></span>
+            <span class="brand-square brand-square-front">R</span>
+          </div>
+          <span>Replication</span>
+        </div>
+
+        <div class="rail-copy">
+          <p class="rail-kicker">ONE VIDEO IN</p>
+          <p class="rail-statement">Skill-led replicas out.</p>
+        </div>
+
+        <div class="capability-status">
+          <span class="status-light"></span>
+          <div>
+            <strong>本地起手 Skill 已绑定</strong>
+            <small>golden-three-second-hook · hook-only-rewriter</small>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">DESKTOP MVP · 0.1</p>
+            <h1>复刻视频，不复刻工作流。</h1>
+            <p class="subtitle">
+              上传一条视频，选择替换人物和音色，Replication 用本地起手 Skill 生成三个可发布复刻版本。
+            </p>
+          </div>
+          <div class="topbar-actions">
+            <button class="text-button hidden" id="changeVideoButton" type="button">
+              更换视频
+            </button>
+            <div class="local-badge">
+              <span></span>
+              本机运行
+            </div>
+          </div>
+        </header>
+
+        <section class="content-grid">
+          <div class="source-column">
+            <div
+              class="drop-zone"
+              id="dropZone"
+              role="button"
+              tabindex="0"
+              aria-label="上传源视频"
+            >
+              <div class="drop-grid" aria-hidden="true"></div>
+              <div class="upload-symbol" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14.5V19h14v-4.5" />
+                </svg>
+              </div>
+              <p class="drop-title">把源视频放在这里</p>
+              <p class="drop-hint">MP4 / MOV 或视频链接 · 竖屏 · 带音轨 · 最长 15 秒</p>
+              <div class="source-actions">
+                <button class="secondary-button" id="chooseVideoButton" type="button">
+                  选择视频
+                </button>
+                <button class="secondary-button" id="openLinkButton" type="button">
+                  复制链接
+                </button>
+              </div>
+            </div>
+
+            <article class="source-card hidden" id="sourceCard">
+              <div class="source-preview">
+                <video id="sourceVideo" controls playsinline></video>
+                <span class="source-label">SOURCE</span>
+              </div>
+              <div class="source-details">
+                <div>
+                  <p class="mini-label">已通过本地预检</p>
+                  <h2 id="sourceName">—</h2>
+                </div>
+                <dl class="metadata-grid">
+                  <div>
+                    <dt>时长</dt>
+                    <dd id="sourceDuration">—</dd>
+                  </div>
+                  <div>
+                    <dt>画幅</dt>
+                    <dd id="sourceRatio">—</dd>
+                  </div>
+                  <div>
+                    <dt>编码</dt>
+                    <dd id="sourceCodec">—</dd>
+                  </div>
+                  <div>
+                    <dt>大小</dt>
+                    <dd id="sourceSize">—</dd>
+                  </div>
+                </dl>
+              </div>
+            </article>
+          </div>
+
+          <div class="plan-column">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">AUTO PLAN</p>
+                <h2>本地 Skill 生成 3 个版本</h2>
+              </div>
+              <span class="scope-chip">人物与音色运行时替换</span>
+            </div>
+
+            <div class="asset-inputs">
+              <button class="asset-input-card" id="choosePersonButton" type="button">
+                <span class="asset-preview" id="personPreview">人</span>
+                <span>
+                  <small>替换人物图</small>
+                  <strong id="personName">未选择</strong>
+                </span>
+              </button>
+              <button class="asset-input-card" id="chooseVoiceButton" type="button">
+                <span class="asset-preview asset-preview-audio">声</span>
+                <span>
+                  <small>音色参考</small>
+                  <strong id="voiceName">未选择</strong>
+                </span>
+              </button>
+            </div>
+
+            <div class="asset-discovery" id="assetDiscovery">
+              <div class="asset-discovery-header">
+                <div>
+                  <strong>本地候选</strong>
+                  <small id="assetDiscoveryHint">选择或导入源视频后，会扫描源视频同目录。</small>
+                </div>
+                <button class="text-button" id="refreshAssetsButton" type="button">
+                  重新扫描
+                </button>
+              </div>
+              <div class="candidate-columns">
+                <section class="candidate-group" aria-label="人物图候选">
+                  <div class="candidate-title">人物图</div>
+                  <div class="candidate-list" id="personCandidateList">
+                    <span class="candidate-empty">正在扫描…</span>
+                  </div>
+                </section>
+                <section class="candidate-group" aria-label="音色候选">
+                  <div class="candidate-title">音色</div>
+                  <div class="candidate-list" id="voiceCandidateList">
+                    <span class="candidate-empty">正在扫描…</span>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div class="variant-list" id="variantList">
+              <article class="variant-card" data-variant-id="golden_opening">
+                <span class="variant-number">01</span>
+                <div class="variant-copy">
+                  <div>
+                    <h3>黄金三秒起手</h3>
+                    <span class="variant-en">GOLDEN 0-3S</span>
+                  </div>
+                  <p>从正在发生的事件切入：主体、场景、冲突先成立，再接回复刻主线。</p>
+                </div>
+                <span class="variant-state" data-state-for="golden_opening">待准备</span>
+              </article>
+
+              <article class="variant-card" data-variant-id="impact_chain">
+                <span class="variant-number">02</span>
+                <div class="variant-copy">
+                  <div>
+                    <h3>冲击链起手</h3>
+                    <span class="variant-en">IMPACT CHAIN</span>
+                  </div>
+                  <p>失控触发、损失显性、人物反应、方法后置，按本地 Hook 链生成。</p>
+                </div>
+                <span class="variant-state" data-state-for="impact_chain">待准备</span>
+              </article>
+
+              <article class="variant-card" data-variant-id="abnormal_turn">
+                <span class="variant-number">03</span>
+                <div class="variant-copy">
+                  <div>
+                    <h3>反常转折起手</h3>
+                    <span class="variant-en">ABNORMAL TURN</span>
+                  </div>
+                  <p>用反常行为、暴露、规则压力或社交碰撞制造前三秒转折。</p>
+                </div>
+                <span class="variant-state" data-state-for="abnormal_turn">待准备</span>
+              </article>
+            </div>
+
+            <div class="action-panel">
+              <div class="action-copy">
+                <span class="action-dot"></span>
+                <div>
+                  <strong id="actionTitle">等待源视频</strong>
+                  <small id="actionHint">选择视频后先做真实本地预检，不会产生费用。</small>
+                </div>
+              </div>
+              <button class="primary-button" id="primaryButton" type="button" disabled>
+                <span id="primaryButtonLabel">生成 3 个复刻版本</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14m-5-5 5 5-5 5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="results-section hidden" id="resultsSection">
+          <div class="section-heading result-heading">
+            <div>
+              <p class="eyebrow">REAL ARTIFACTS</p>
+              <h2>复刻结果</h2>
+            </div>
+            <p id="resultSummary">生成状态来自真实任务。</p>
+          </div>
+          <div class="result-grid" id="resultGrid"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="authorizationModal" aria-hidden="true">
+      <section class="authorization-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <button class="modal-close" id="closeModalButton" type="button" aria-label="关闭">
+          ×
+        </button>
+        <p class="eyebrow">PAID AUTHORIZATION</p>
+        <h2 id="authTitle">确认提交 3 个 Seedance 任务</h2>
+        <p class="modal-lead">
+          本地起手 Skill、替换人物和音色参考已经写入 3 份合同。下一步会真实上传素材并产生供应商费用。
+        </p>
+
+        <dl class="authorization-facts">
+          <div>
+            <dt>平台</dt>
+            <dd>Kuaizi / Seedance 2.0</dd>
+          </div>
+          <div>
+            <dt>数量</dt>
+            <dd>固定 3 个视频任务</dd>
+          </div>
+          <div>
+            <dt>输出</dt>
+            <dd>480p · 9:16 · 带声音 MP4</dd>
+          </div>
+          <div>
+            <dt>费用</dt>
+            <dd>按供应商账户实时价格扣费</dd>
+          </div>
+        </dl>
+
+        <label class="authorization-check">
+          <input id="authorizationCheckbox" type="checkbox" />
+          <span>
+            我确认只授权当前这 3 个付费任务；失败任务不会自动付费重提。
+          </span>
+        </label>
+
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelAuthorizationButton" type="button">
+            暂不提交
+          </button>
+          <button class="primary-button" id="confirmAuthorizationButton" type="button" disabled>
+            授权并开始生成
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="linkModal" aria-hidden="true">
+      <section class="authorization-modal link-modal" role="dialog" aria-modal="true" aria-labelledby="linkTitle">
+        <button class="modal-close" id="closeLinkModalButton" type="button" aria-label="关闭">
+          ×
+        </button>
+        <p class="eyebrow">LINK INPUT</p>
+        <h2 id="linkTitle">把视频链接粘进来</h2>
+        <p class="modal-lead">
+          Replication 会通过恒河猫 / MeowLoad 把链接视频先拉到本地，再执行同一套竖屏、音轨和时长预检。
+        </p>
+
+        <label class="link-field">
+          <span>视频链接</span>
+          <textarea
+            id="linkInput"
+            rows="4"
+            placeholder="https://..."
+            spellcheck="false"
+          ></textarea>
+        </label>
+        <small class="link-status" id="linkStatus">
+          这里只导入源视频，不会提交 Seedance，也不会产生生成费用。
+        </small>
+
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelLinkButton" type="button">
+            取消
+          </button>
+          <button class="primary-button" id="importLinkButton" type="button">
+            拉取并预检
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status">
+      <span class="toast-icon">!</span>
+      <span id="toastMessage"></span>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
