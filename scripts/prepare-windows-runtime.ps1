@@ -34,9 +34,25 @@ function Assert-Sha256 {
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$Expected
     )
-    $Actual = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    $Actual = Get-Sha256 -Path $Path
     if ($Actual -ne $Expected.ToLowerInvariant()) {
         throw "SHA-256 mismatch for $Path. Expected $Expected; got $Actual."
+    }
+}
+
+function Get-Sha256 {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+    $Stream = [IO.File]::OpenRead($Path)
+    $Hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $Bytes = $Hasher.ComputeHash($Stream)
+        return ([BitConverter]::ToString($Bytes)).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+        $Hasher.Dispose()
+        $Stream.Dispose()
     }
 }
 
@@ -108,7 +124,7 @@ try {
             version = $PythonVersion
             source = $PythonUrl
             archive_sha256 = $PythonSha256
-            executable_sha256 = (Get-FileHash -Path $EmbeddedPython -Algorithm SHA256).Hash.ToLowerInvariant()
+            executable_sha256 = (Get-Sha256 -Path $EmbeddedPython)
             packages = (& $EmbeddedPython -c "import importlib.metadata as m, json; print(json.dumps({n:m.version(n) for n in ('requests','certifi','charset-normalizer','idna','urllib3')}))" | ConvertFrom-Json)
         }
         ffmpeg = [ordered]@{
@@ -116,8 +132,8 @@ try {
             source = $FfmpegUrl
             source_project = "https://ffmpeg.org/"
             archive_sha256 = $FfmpegSha256
-            ffmpeg_sha256 = (Get-FileHash -Path (Join-Path $FfmpegRoot "ffmpeg.exe") -Algorithm SHA256).Hash.ToLowerInvariant()
-            ffprobe_sha256 = (Get-FileHash -Path $EmbeddedFfprobe -Algorithm SHA256).Hash.ToLowerInvariant()
+            ffmpeg_sha256 = (Get-Sha256 -Path (Join-Path $FfmpegRoot "ffmpeg.exe"))
+            ffprobe_sha256 = (Get-Sha256 -Path $EmbeddedFfprobe)
         }
     }
     $Manifest | ConvertTo-Json -Depth 5 | Set-Content -Path (Join-Path $StagingRoot "runtime-manifest.json") -Encoding UTF8
