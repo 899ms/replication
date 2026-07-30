@@ -5,12 +5,16 @@ const path = require("node:path");
 
 const {
   bootstrapPythonCandidates,
+  bundledRuntimePaths,
   defaultCredentialsPath,
   localVenvPython
 } = require("../src/core/platform-runtime");
 
 const projectRoot = path.resolve(__dirname, "..");
 const runtimeRoot = path.join(projectRoot, "runtime", "seedance-face-swap", "scripts");
+const bundledRuntimeRoot = bundledRuntimePaths({ projectRoot }).find(
+  (candidate) => fs.existsSync(candidate)
+);
 const requiredScripts = [
   "inspect_inputs.py",
   "create_face_swap_contract.py",
@@ -88,6 +92,9 @@ checks.push({
 });
 const ffprobe = resolveExecutable([
   process.env.REPLICATION_FFPROBE,
+  bundledRuntimeRoot
+    ? path.join(bundledRuntimeRoot, "ffmpeg", "ffprobe.exe")
+    : null,
   "/opt/homebrew/bin/ffprobe",
   "/usr/local/bin/ffprobe",
   "/usr/bin/ffprobe",

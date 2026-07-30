@@ -134,6 +134,7 @@ async function importVideoFromLink({
   dataRoot,
   probeVideo,
   meowloadPath = null,
+  meowloadArgsPrefix = [],
   meowloadCandidates = DEFAULT_MEOWLOAD_CANDIDATES
 }) {
   if (typeof probeVideo !== "function") {
@@ -155,7 +156,7 @@ async function importVideoFromLink({
   const warnings = [];
 
   try {
-    await runLogged(meowload, ["info", url], {
+    await runLogged(meowload, [...meowloadArgsPrefix, "info", url], {
       cwd: importDir,
       logPath: infoLog,
       label: "MeowLoad info",
@@ -166,7 +167,13 @@ async function importVideoFromLink({
   }
 
   try {
-    await runLogged(meowload, ["download", url, "--output-dir", importDir], {
+    await runLogged(meowload, [
+      ...meowloadArgsPrefix,
+      "download",
+      url,
+      "--output-dir",
+      importDir
+    ], {
       cwd: importDir,
       logPath: downloadLog,
       label: "MeowLoad download"

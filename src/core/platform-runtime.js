@@ -2,7 +2,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 function pathApi(platform) {
-  return platform === "win32" ? path.win32 : path;
+  return platform === "win32" ? path.win32 : path.posix;
 }
 
 function localVenvPython(projectRoot, platform = process.platform) {

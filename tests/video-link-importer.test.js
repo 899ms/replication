@@ -53,7 +53,8 @@ test("imports a linked video through the MeowLoad adapter and validates the down
   const imported = await importVideoFromLink({
     rawUrl: "https://example.com/video",
     dataRoot,
-    meowloadPath: fakeMeowload,
+    meowloadPath: process.execPath,
+    meowloadArgsPrefix: [fakeMeowload],
     probeVideo: async (videoPath) => {
       probedPath = videoPath;
       return {
