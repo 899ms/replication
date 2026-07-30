@@ -1,9 +1,10 @@
 node_modules/
+.venv/
 dist/
-runtime/
 .env
 .env.*
 !.env.example
+config/credentials.json
 __pycache__/
 *.py[cod]
 *.mp4

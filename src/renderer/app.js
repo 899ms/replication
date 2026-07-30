@@ -174,9 +174,9 @@ function updatePrepareAvailability() {
     return;
   }
   ui.actionTitle.textContent = "素材已齐";
-  ui.actionHint.textContent = "下一步只创建本地 Skill + Seedance 合同；授权前不会上传或扣费。";
+  ui.actionHint.textContent = "下一步只创建 3 份本地 Seedance 合同；授权前不会上传或扣费。";
   ui.primaryButton.disabled = false;
-  ui.primaryButtonLabel.textContent = "准备本地 Skill 合同";
+  ui.primaryButtonLabel.textContent = "准备 3 份本地合同";
 }
 
 function setPersonAsset(filePath, previewUrl = null) {
@@ -578,7 +578,7 @@ async function prepareCurrentVideo() {
   }
   setBusy(true, "正在准备真实合同…");
   ui.actionTitle.textContent = "正在检查人物、音色并创建 3 份合同";
-  ui.actionHint.textContent = "每个版本都会绑定本地起手 Skill、替换人物图和 @Audio 1 音色。";
+  ui.actionHint.textContent = "每个版本都会绑定内置起手策略、替换人物图和 @Audio 1 音色。";
   try {
     const run = await window.replication.prepareRun({
       videoPath: state.selectedPath,

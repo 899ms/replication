@@ -11,8 +11,25 @@ const { normalizeProbe, validateVideoPath } = require("../core/video-contract");
 const { importVideoFromLink } = require("./video-link-importer");
 
 const execFileAsync = promisify(execFile);
-const DEFAULT_SKILL_ROOT = "/Users/abo/.codex/skills/seedance-face-swap";
-const DEFAULT_FFPROBE = "/opt/homebrew/bin/ffprobe";
+
+function unpackedRuntimePath(candidate) {
+  const asarSegment = `${path.sep}app.asar${path.sep}`;
+  return candidate.includes(asarSegment)
+    ? candidate.replace(asarSegment, `${path.sep}app.asar.unpacked${path.sep}`)
+    : candidate;
+}
+
+const DEFAULT_SKILL_ROOT = unpackedRuntimePath(
+  path.resolve(__dirname, "../../runtime/seedance-face-swap")
+);
+const LOCAL_VENV_PYTHON = path.resolve(__dirname, "../../.venv/bin/python");
+const DEFAULT_PYTHON = fs.existsSync(LOCAL_VENV_PYTHON) ? LOCAL_VENV_PYTHON : "python3";
+const DEFAULT_FFPROBE = [
+  process.env.REPLICATION_FFPROBE,
+  "/opt/homebrew/bin/ffprobe",
+  "/usr/local/bin/ffprobe",
+  "/usr/bin/ffprobe"
+].find((candidate) => candidate && (path.isAbsolute(candidate) ? fs.existsSync(candidate) : true)) || "ffprobe";
 const LOCAL_TRACKING_INTERRUPTED_MESSAGE =
   "APP 在任务执行期间被关闭，本地跟踪已中断；未拿到远端任务 ID 的版本无法恢复。";
 const RECOVERY_STATUS_MESSAGE = "正在恢复远端任务；不会重复付费提交。";
@@ -105,8 +122,8 @@ class RunManager extends EventEmitter {
     this.dataRoot = options.dataRoot;
     this.assetRoot = options.assetRoot;
     this.skillRoot = options.skillRoot || process.env.REPLICATION_FACE_SWAP_SKILL || DEFAULT_SKILL_ROOT;
-    this.python = options.python || process.env.REPLICATION_PYTHON || "python3";
-    this.ffprobe = options.ffprobe || process.env.REPLICATION_FFPROBE || DEFAULT_FFPROBE;
+    this.python = options.python || process.env.REPLICATION_PYTHON || DEFAULT_PYTHON;
+    this.ffprobe = options.ffprobe || DEFAULT_FFPROBE;
     this.linkImporter = options.linkImporter || importVideoFromLink;
     this.resumeScript = options.resumeScript || null;
     this.processes = new Map();
@@ -683,6 +700,14 @@ class RunManager extends EventEmitter {
         ],
         {
           cwd: path.dirname(variant.contractPath),
+          env: {
+            ...process.env,
+            REPLICATION_FACE_SWAP_SUBMITTER: path.join(
+              this.skillRoot,
+              "scripts",
+              "submit_face_swap_task.py"
+            )
+          },
           stdio: ["ignore", "pipe", "pipe"]
         }
       );
@@ -776,6 +801,14 @@ class RunManager extends EventEmitter {
         ],
         {
           cwd: path.dirname(variant.contractPath),
+          env: {
+            ...process.env,
+            REPLICATION_FACE_SWAP_SUBMITTER: path.join(
+              this.skillRoot,
+              "scripts",
+              "submit_face_swap_task.py"
+            )
+          },
           stdio: ["ignore", "pipe", "pipe"]
         }
       );

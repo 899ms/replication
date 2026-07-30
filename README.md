@@ -1,56 +1,160 @@
 # Replication
 
-Replication is a deliberately small macOS desktop app:
-
-```text
-one source video
-→ runtime person + voice replacement
-→ three Seedance identity-replacement contracts
-→ three generated MP4s
-```
-
-The source video can come from a local file or a copied video link. Link import
-is handled through Henghe Cat / MeowLoad, downloaded into local storage, and then
-validated with the same source-video contract.
-
-The app requires a runtime replacement person image and voice reference, then
-applies three fixed creative directions:
+Replication is a macOS desktop app that turns one short source video into three
+Seedance identity-replacement variants:
 
 1. golden three-second opening;
 2. impact-chain opening;
 3. abnormal-turn opening.
 
-Each direction also receives a distinct ending treatment. The source story,
-scene, camera logic, and central meaning remain locked.
+The source story, scene, camera logic, and central meaning stay locked. A
+replacement person image and voice reference are required at runtime.
 
-## Run locally
+## Portable runtime
+
+The repository includes the Python runtime used to:
+
+- inspect input media;
+- prepare three deterministic Seedance request contracts;
+- upload references and submit authorized Kuaizi / Seedance jobs;
+- resume saved provider task IDs;
+- download and validate the final MP4 files.
+
+No `/Users/...` developer path is required. No API key, account, password,
+cookie, token, signed URL, or private credential file is included in the
+repository.
+
+## Requirements
+
+- macOS on Apple silicon for the provided packaging command;
+- Node.js 22.12 or newer and npm;
+- Python 3;
+- FFmpeg (`ffmpeg` and `ffprobe`);
+- the private Python environment created from `requirements.txt`;
+- a Kuaizi account with Seedance access for paid generation;
+- optional Henghe Cat / MeowLoad CLI for importing a copied video link.
+
+Local file import does not require MeowLoad.
+
+## Install
 
 ```bash
+git clone https://github.com/francoeur003/replication.git
+cd replication
 npm install
+npm run setup:python
+brew install ffmpeg
+npm run doctor
 npm start
 ```
 
-## Tests
+If FFmpeg is already installed, skip `brew install ffmpeg`.
+`npm run setup:python` creates a repository-local `.venv` and Replication
+detects it automatically; nothing is installed into the system Python.
+
+## Configure private credentials
+
+Credentials stay on each user's own computer. The easiest setup is:
 
 ```bash
-npm test
-npm run test:integration -- "/absolute/path/to/a/vertical-video.mp4"
+npm run configure
 ```
 
-The integration test performs a real local preflight and creates three
-Seedance dry-run contracts. It does not submit paid jobs.
+The command creates:
 
-## Real generation boundary
+```text
+~/.config/replication/credentials.json
+```
 
-The desktop action is bound to the canonical `seedance-face-swap` execution
-workflow through `video.replication.generate.v1`. Preparing contracts is local
-and free. Submitting three Seedance jobs is a paid external action and therefore
-requires an explicit confirmation inside the app for that exact run.
+with file mode `0600`. It refuses to overwrite an existing file and never
+prints entered secrets.
 
-The app never reports success from a timer or template response. Success
-requires a real MP4 artifact that can be probed.
+The supported fields are shown with empty values in
+`config/credentials.example.json`. Users can supply either:
 
-The current Demo persists run contracts, logs, task IDs, and artifacts. It can
-restore finished history after restart, but it does not yet reconnect to an
-in-flight remote task. Closing the app during generation stops local tracking;
-it never resubmits or charges again automatically.
+- `username` and `password`; or
+- `console_token` and `api_key`.
+
+Environment variables are also supported:
+
+```bash
+export KUAIZI_USERNAME="..."
+export KUAIZI_PASSWORD="..."
+```
+
+or:
+
+```bash
+export KUAIZI_CONSOLE_TOKEN="..."
+export KUAIZI_API_KEY="..."
+```
+
+Set `REPLICATION_CREDENTIALS_FILE` only when using a different private
+credential-file location. Never put real values in this repository.
+
+## Optional link import
+
+Copied-link import uses MeowLoad. After installing and logging in to MeowLoad,
+Replication searches the normal Homebrew locations. A custom executable can be
+provided with:
+
+```bash
+export REPLICATION_MEOWLOAD="/absolute/path/to/MeowLoad"
+```
+
+Without MeowLoad, drag or select a local MP4/MOV/M4V file.
+
+## Run and test
+
+```bash
+npm run doctor
+npm test
+npm start
+```
+
+The local integration test prepares three dry-run contracts and does not submit
+paid jobs:
+
+```bash
+npm run test:integration -- \
+  "/absolute/path/to/vertical-video.mp4" \
+  "/absolute/path/to/person.png" \
+  "/absolute/path/to/voice.mp3"
+```
+
+## Build for macOS
+
+```bash
+npm run build:mac
+```
+
+The packaged app includes `runtime/seedance-face-swap`; the recipient does not
+need the developer's Codex Skill directory. Python, the `requests` package,
+FFmpeg, and private Kuaizi credentials remain machine-level prerequisites. For
+a standalone `.app`, set `REPLICATION_PYTHON` to a Python executable that has
+`requests` installed; source installs use `.venv/bin/python` automatically.
+
+## Paid generation boundary
+
+Preparing contracts is local and free. Submitting a run creates exactly three
+external Seedance jobs and can incur charges.
+
+The app remains in `waiting_authorization` until the user explicitly confirms
+that exact run. Success is reported only after a real MP4 is downloaded and
+passes media validation. Closing the app never resubmits automatically.
+
+## Troubleshooting
+
+Run:
+
+```bash
+npm run doctor
+```
+
+`FAIL` marks a required local dependency. `WARN` marks an optional or
+generation-only dependency:
+
+- missing Kuaizi credentials: run `npm run configure`;
+- missing Python `requests`: run `npm run setup:python`;
+- missing FFmpeg: run `brew install ffmpeg`;
+- missing MeowLoad: use local video import or install/login to MeowLoad.

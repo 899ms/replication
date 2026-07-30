@@ -16,11 +16,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-import requests
-
-
-DEFAULT_SUBMITTER = Path(
-    "/Users/abo/.codex/skills/seedance-face-swap/scripts/submit_face_swap_task.py"
+DEFAULT_SUBMITTER = (
+    Path(__file__).resolve().parents[2]
+    / "runtime"
+    / "seedance-face-swap"
+    / "scripts"
+    / "submit_face_swap_task.py"
 )
 
 
@@ -134,7 +135,7 @@ def main() -> int:
 
     video_path = out_dir / f"{row_slug}_seedance2_{resolution}_{duration}s.mp4"
     if not video_path.exists() or video_path.stat().st_size <= 0:
-        downloaded = requests.get(video_url, timeout=300)
+        downloaded = client.session.get(video_url, timeout=300)
         if downloaded.status_code >= 400:
             raise RuntimeError(f"Video download failed HTTP {downloaded.status_code}")
         video_path.write_bytes(downloaded.content)

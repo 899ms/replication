@@ -10,7 +10,7 @@
       "hook-only-rewriter",
       "seedance-face-swap"
     ],
-    "entry": "/Users/abo/.codex/skills/seedance-face-swap/scripts"
+    "entry": "runtime/seedance-face-swap/scripts"
   },
   "execution": {
     "adapter": "python-cli",
