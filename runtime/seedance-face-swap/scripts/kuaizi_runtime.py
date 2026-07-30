@@ -15,7 +15,14 @@ import requests
 
 BASE_CONSOLE = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/v1"
 BASE_API = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/api/v3"
-DEFAULT_CREDENTIALS = Path.home() / ".config" / "replication" / "credentials.json"
+
+
+def default_credentials_path() -> Path:
+    if os.name == "nt":
+        root = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+        return root / "Replication" / "credentials.json"
+    root = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+    return root / "replication" / "credentials.json"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -24,7 +31,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def credentials_path() -> Path:
     explicit = os.environ.get("REPLICATION_CREDENTIALS_FILE")
-    return Path(explicit).expanduser() if explicit else DEFAULT_CREDENTIALS
+    return Path(explicit).expanduser() if explicit else default_credentials_path()
 
 
 def load_private_credentials() -> dict[str, Any]:
@@ -75,7 +82,7 @@ class KuaiziClient:
     def __init__(self) -> None:
         stored = load_private_credentials()
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "replication/0.2"})
+        self.session.headers.update({"User-Agent": "replication/0.3"})
         self.console_token = os.environ.get("KUAIZI_CONSOLE_TOKEN") or stored.get("console_token")
         self.api_key = os.environ.get("KUAIZI_API_KEY") or stored.get("api_key")
         self.username = os.environ.get("KUAIZI_USERNAME") or stored.get("username")

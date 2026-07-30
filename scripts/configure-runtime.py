@@ -10,7 +10,12 @@ import os
 from pathlib import Path
 
 
-DEFAULT_PATH = Path.home() / ".config" / "replication" / "credentials.json"
+def default_path() -> Path:
+    if os.name == "nt":
+        root = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+        return root / "Replication" / "credentials.json"
+    root = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+    return root / "replication" / "credentials.json"
 
 
 def prompt(label: str, *, secret: bool = False) -> str:
@@ -20,7 +25,7 @@ def prompt(label: str, *, secret: bool = False) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--path", type=Path, default=DEFAULT_PATH)
+    parser.add_argument("--path", type=Path, default=default_path())
     args = parser.parse_args()
     target = args.path.expanduser()
     if target.exists():

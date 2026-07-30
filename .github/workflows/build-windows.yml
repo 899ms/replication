@@ -1,0 +1,99 @@
+name: Build Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-windows.yml"
+      - "assets/**"
+      - "config/**"
+      - "package-lock.json"
+      - "package.json"
+      - "requirements.txt"
+      - "runtime/**"
+      - "scripts/**"
+      - "src/**"
+      - "tests/**"
+      - "windows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.14"
+          cache: pip
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install source-development Python dependencies
+        run: npm run setup:python
+
+      - name: Prepare bundled Windows runtime
+        run: npm run prepare:win-runtime
+
+      - name: Test and diagnose
+        run: |
+          npm test
+          npm run doctor
+
+      - name: Build Windows package
+        run: npm run build:win
+
+      - name: Smoke-test embedded dependencies and launch
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $PWD "dist\Replication-win32-x64"
+          $python = Join-Path $packageRoot "resources\replication-runtime\python\python.exe"
+          $ffmpeg = Join-Path $packageRoot "resources\replication-runtime\ffmpeg\ffmpeg.exe"
+          $ffprobe = Join-Path $packageRoot "resources\replication-runtime\ffmpeg\ffprobe.exe"
+          & $python -c "import requests; print(requests.__version__)"
+          if ($LASTEXITCODE -ne 0) { throw "Embedded Python failed." }
+          & $ffprobe -version
+          if ($LASTEXITCODE -ne 0) { throw "Embedded ffprobe failed." }
+
+          $capturePath = Join-Path $env:RUNNER_TEMP "replication-windows-smoke.png"
+          $env:REPLICATION_CAPTURE_PATH = $capturePath
+          $app = Start-Process -FilePath (Join-Path $packageRoot "Replication.exe") -PassThru
+          if (-not $app.WaitForExit(30000)) {
+            Stop-Process -Id $app.Id -Force
+            throw "Replication.exe did not finish the launch smoke test."
+          }
+          if ($app.ExitCode -ne 0) {
+            throw "Replication.exe exited with code $($app.ExitCode)."
+          }
+          if (-not (Test-Path $capturePath)) {
+            throw "The packaged app did not produce its launch screenshot."
+          }
+
+          $archive = Join-Path $PWD "dist\Replication-0.3.0-windows-x64.zip"
+          Compress-Archive -Path (Join-Path $packageRoot "*") -DestinationPath $archive -CompressionLevel Optimal
+
+      - name: Upload portable Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Replication-0.3.0-windows-x64
+          path: |
+            dist/Replication-0.3.0-windows-x64.zip
+            ${{ runner.temp }}/replication-windows-smoke.png
+          if-no-files-found: error
+          retention-days: 30

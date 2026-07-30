@@ -3,6 +3,12 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
+const {
+  bootstrapPythonCandidates,
+  defaultCredentialsPath,
+  localVenvPython
+} = require("../src/core/platform-runtime");
+
 const projectRoot = path.resolve(__dirname, "..");
 const runtimeRoot = path.join(projectRoot, "runtime", "seedance-face-swap", "scripts");
 const requiredScripts = [
@@ -36,7 +42,10 @@ function resolveExecutable(candidates) {
 function credentialsState() {
   const configured =
     process.env.REPLICATION_CREDENTIALS_FILE ||
-    path.join(os.homedir(), ".config", "replication", "credentials.json");
+    defaultCredentialsPath({
+      environment: process.env,
+      homeDir: os.homedir()
+    });
   const hasEnvironment =
     Boolean(process.env.KUAIZI_CONSOLE_TOKEN && process.env.KUAIZI_API_KEY) ||
     Boolean(process.env.KUAIZI_USERNAME && process.env.KUAIZI_PASSWORD);
@@ -49,20 +58,33 @@ const nodeReady =
   nodeVersion[0] > 22 ||
   (nodeVersion[0] === 22 && (nodeVersion[1] > 12 || (nodeVersion[1] === 12 && nodeVersion[2] >= 0)));
 checks.push({ name: "Node.js >= 22.12", required: true, ok: nodeReady });
-const localPython = path.join(projectRoot, ".venv", "bin", "python");
-const python =
-  process.env.REPLICATION_PYTHON ||
-  (fs.existsSync(localPython) ? localPython : "python3");
+const localPython = localVenvPython(projectRoot);
+const pythonCandidates = [
+  process.env.REPLICATION_PYTHON
+    ? { command: process.env.REPLICATION_PYTHON, prefixArgs: [] }
+    : null,
+  fs.existsSync(localPython)
+    ? { command: localPython, prefixArgs: [] }
+    : null,
+  ...bootstrapPythonCandidates()
+].filter(Boolean);
+const pythonEntry = pythonCandidates.find((candidate) =>
+  commandWorks(candidate.command, [...candidate.prefixArgs, "--version"])
+);
+const python = pythonEntry?.command || "";
+const pythonPrefixArgs = pythonEntry?.prefixArgs || [];
 checks.push({
   name: "packaged runtime",
   required: true,
   ok: requiredScripts.every((name) => fs.existsSync(path.join(runtimeRoot, name)))
 });
-checks.push({ name: "Python 3", required: true, ok: commandWorks(python, ["--version"]) });
+checks.push({ name: "Python 3", required: true, ok: Boolean(pythonEntry) });
 checks.push({
   name: "Python requests",
   required: true,
-  ok: commandWorks(python, ["-c", "import requests"])
+  ok:
+    Boolean(pythonEntry) &&
+    commandWorks(python, [...pythonPrefixArgs, "-c", "import requests"])
 });
 const ffprobe = resolveExecutable([
   process.env.REPLICATION_FFPROBE,
@@ -79,7 +101,9 @@ const meowload = resolveExecutable([
   "/opt/homebrew/bin/MeowLoad",
   "/opt/homebrew/bin/meowload",
   "/usr/local/bin/MeowLoad",
-  "/usr/local/bin/meowload"
+  "/usr/local/bin/meowload",
+  "MeowLoad.exe",
+  "meowload.exe"
 ]);
 checks.push({ name: "MeowLoad (link import only)", required: false, ok: Boolean(meowload) });
 

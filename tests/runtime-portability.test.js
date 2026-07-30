@@ -35,11 +35,29 @@ test("production bindings do not reference abo's machine", () => {
   }
 });
 
-test("mac build keeps the packaged runtime", () => {
+test("desktop builds keep the packaged runtime", () => {
   const pkg = JSON.parse(read("package.json"));
-  assert.doesNotMatch(pkg.scripts["build:mac"], /\(runtime\|/);
-  assert.match(pkg.scripts["build:mac"], /--asar\.unpackDir=runtime/);
-  assert.match(pkg.scripts["build:mac"], /\\\.venv/);
+  for (const target of ["build:mac", "build:win"]) {
+    assert.doesNotMatch(pkg.scripts[target], /\(runtime\|/);
+    assert.match(pkg.scripts[target], /--asar\.unpackDir=runtime/);
+    assert.match(pkg.scripts[target], /\\\.venv/);
+  }
+  assert.match(pkg.scripts["build:win"], /--platform=win32/);
+  assert.match(pkg.scripts["build:win"], /--arch=x64/);
+  assert.match(pkg.scripts["build:win"], /--extra-resource=vendor\/replication-runtime/);
+  assert.match(pkg.scripts["build:win"], /--extra-resource=scripts\/configure-runtime\.py/);
   assert.doesNotMatch(read(".gitignore"), /^runtime\/$/m);
   assert.match(read(".gitignore"), /^\.venv\/$/m);
+});
+
+test("Windows release includes a first-run credential helper without secrets", () => {
+  const helper = read("windows/Configure-Account.cmd");
+  const instructions = read("windows/README-Windows.txt");
+  assert.match(helper, /replication-runtime\\python\\python\.exe/);
+  assert.match(helper, /configure-runtime\.py/);
+  assert.match(instructions, /不会包含/);
+  assert.doesNotMatch(
+    `${helper}\n${instructions}`,
+    /KUAIZI_(API_KEY|PASSWORD|CONSOLE_TOKEN)\s*=\s*["'][^"']+/
+  );
 });

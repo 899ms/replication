@@ -1,42 +1,49 @@
 # Replication
 
-Replication is a macOS desktop app that turns one short source video into three
-Seedance identity-replacement variants:
+Replication 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，一次生成 3 个 Seedance 身份替换版本：
 
-1. golden three-second opening;
-2. impact-chain opening;
-3. abnormal-turn opening.
+1. 黄金三秒开场；
+2. 冲击链开场；
+3. 异常转折开场。
 
-The source story, scene, camera logic, and central meaning stay locked. A
-replacement person image and voice reference are required at runtime.
+原故事、场景、镜头逻辑和中心含义保持锁定。
 
-## Portable runtime
+## Windows 便携版
 
-The repository includes the Python runtime used to:
+普通使用者请从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载：
 
-- inspect input media;
-- prepare three deterministic Seedance request contracts;
-- upload references and submit authorized Kuaizi / Seedance jobs;
-- resume saved provider task IDs;
-- download and validate the final MP4 files.
+```text
+Replication-0.3.0-windows-x64.zip
+```
 
-No `/Users/...` developer path is required. No API key, account, password,
-cookie, token, signed URL, or private credential file is included in the
-repository.
+完整解压后：
 
-## Requirements
+1. 双击 `Configure-Account.cmd`，输入使用者自己的筷子 / Seedance 账号；
+2. 双击 `Replication.exe`；
+3. 选择本地视频、替换人物图和音色参考。
 
-- macOS on Apple silicon for the provided packaging command;
-- Node.js 22.12 or newer and npm;
-- Python 3;
-- FFmpeg (`ffmpeg` and `ffprobe`);
-- the private Python environment created from `requirements.txt`;
-- a Kuaizi account with Seedance access for paid generation;
-- optional Henghe Cat / MeowLoad CLI for importing a copied video link.
+Windows 发布包已内置：
 
-Local file import does not require MeowLoad.
+- Python 3.13；
+- Python `requests` 及其依赖；
+- FFmpeg 和 ffprobe；
+- Replication 的生成运行脚本。
 
-## Install
+因此接收者不需要安装 Node.js、Python、pip、FFmpeg，也不会依赖开发者电脑上的 `/Users/...` 路径。API Key、Token、账号、密码、Cookie 和私人配置不会放进仓库或发布包。
+
+当前 Windows 包未购买代码签名证书，SmartScreen 可能提示“未知发布者”。请只从本仓库 Releases 下载。Windows 便携包支持 Windows 10/11 x64。
+
+MeowLoad 仍是可选组件：只有“粘贴视频链接导入”需要；直接选择本地视频不需要。
+
+## macOS / 源码运行
+
+要求：
+
+- Node.js 22.12 或更新版本；
+- Python 3；
+- FFmpeg（`ffmpeg` 和 `ffprobe`）；
+- 有 Seedance 权限的筷子账号；
+- 可选 MeowLoad，用于粘贴链接导入。
 
 ```bash
 git clone https://github.com/francoeur003/replication.git
@@ -48,63 +55,43 @@ npm run doctor
 npm start
 ```
 
-If FFmpeg is already installed, skip `brew install ffmpeg`.
-`npm run setup:python` creates a repository-local `.venv` and Replication
-detects it automatically; nothing is installed into the system Python.
+如果 FFmpeg 已安装，可跳过 `brew install ffmpeg`。`npm run setup:python` 只创建仓库内的 `.venv`，不会修改系统 Python。
 
-## Configure private credentials
+## 私人账号配置
 
-Credentials stay on each user's own computer. The easiest setup is:
+源码运行时执行：
 
 ```bash
 npm run configure
 ```
 
-The command creates:
+默认配置位置：
 
-```text
-~/.config/replication/credentials.json
-```
+- Windows：`%APPDATA%\Replication\credentials.json`
+- macOS / Linux：`~/.config/replication/credentials.json`
 
-with file mode `0600`. It refuses to overwrite an existing file and never
-prints entered secrets.
+支持两种配置：
 
-The supported fields are shown with empty values in
-`config/credentials.example.json`. Users can supply either:
+- `username` 和 `password`；
+- `console_token` 和 `api_key`。
 
-- `username` and `password`; or
-- `console_token` and `api_key`.
-
-Environment variables are also supported:
+也可使用环境变量：
 
 ```bash
 export KUAIZI_USERNAME="..."
 export KUAIZI_PASSWORD="..."
 ```
 
-or:
+或：
 
 ```bash
 export KUAIZI_CONSOLE_TOKEN="..."
 export KUAIZI_API_KEY="..."
 ```
 
-Set `REPLICATION_CREDENTIALS_FILE` only when using a different private
-credential-file location. Never put real values in this repository.
+如需修改配置文件位置，可设置 `REPLICATION_CREDENTIALS_FILE`。请勿把真实值提交进仓库。
 
-## Optional link import
-
-Copied-link import uses MeowLoad. After installing and logging in to MeowLoad,
-Replication searches the normal Homebrew locations. A custom executable can be
-provided with:
-
-```bash
-export REPLICATION_MEOWLOAD="/absolute/path/to/MeowLoad"
-```
-
-Without MeowLoad, drag or select a local MP4/MOV/M4V file.
-
-## Run and test
+## 测试
 
 ```bash
 npm run doctor
@@ -112,8 +99,7 @@ npm test
 npm start
 ```
 
-The local integration test prepares three dry-run contracts and does not submit
-paid jobs:
+本地集成测试只准备 3 份 dry-run 合约，不会提交付费任务：
 
 ```bash
 npm run test:integration -- \
@@ -122,39 +108,33 @@ npm run test:integration -- \
   "/absolute/path/to/voice.mp3"
 ```
 
-## Build for macOS
+## 构建
+
+macOS Apple silicon：
 
 ```bash
 npm run build:mac
 ```
 
-The packaged app includes `runtime/seedance-face-swap`; the recipient does not
-need the developer's Codex Skill directory. Python, the `requests` package,
-FFmpeg, and private Kuaizi credentials remain machine-level prerequisites. For
-a standalone `.app`, set `REPLICATION_PYTHON` to a Python executable that has
-`requests` installed; source installs use `.venv/bin/python` automatically.
+Windows x64 请在 PowerShell 中运行：
 
-## Paid generation boundary
-
-Preparing contracts is local and free. Submitting a run creates exactly three
-external Seedance jobs and can incur charges.
-
-The app remains in `waiting_authorization` until the user explicitly confirms
-that exact run. Success is reported only after a real MP4 is downloaded and
-passes media validation. Closing the app never resubmits automatically.
-
-## Troubleshooting
-
-Run:
-
-```bash
-npm run doctor
+```powershell
+npm run prepare:win-runtime
+npm run build:win
 ```
 
-`FAIL` marks a required local dependency. `WARN` marks an optional or
-generation-only dependency:
+GitHub Actions 工作流会在真实 Windows runner 上完成依赖下载、SHA-256 校验、单元测试、依赖自检、打包、应用启动截图和 ZIP 产出。
 
-- missing Kuaizi credentials: run `npm run configure`;
-- missing Python `requests`: run `npm run setup:python`;
-- missing FFmpeg: run `brew install ffmpeg`;
-- missing MeowLoad: use local video import or install/login to MeowLoad.
+## 付费边界
+
+准备合约是本地免费操作。提交一次运行会创建恰好 3 个外部 Seedance 任务，可能产生费用。
+
+APP 会保持在 `waiting_authorization`，直到使用者明确确认当前这 3 条任务。只有真实 MP4 已下载且通过媒体校验后才会显示成功；关闭 APP 不会自动重复提交。
+
+## 第三方运行组件
+
+Windows 便携包使用：
+
+- [Python Windows embeddable package](https://docs.python.org/3.13/using/windows.html)，Python Software Foundation License；
+- [FFmpeg](https://ffmpeg.org/download.html) 推荐的 Windows essentials build，随包保留许可证；
+- `requests` 及依赖，许可证保留在各自的 `.dist-info` 目录。

@@ -37,14 +37,12 @@ function resolveDataRoot() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: 1320,
     height: 860,
     minWidth: 1080,
     minHeight: 720,
     title: "Replication",
-    titleBarStyle: "hiddenInset",
-    trafficLightPosition: { x: 20, y: 18 },
     backgroundColor: "#F3F2EC",
     show: false,
     webPreferences: {
@@ -53,7 +51,12 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false
     }
-  });
+  };
+  if (process.platform === "darwin") {
+    windowOptions.titleBarStyle = "hiddenInset";
+    windowOptions.trafficLightPosition = { x: 20, y: 18 };
+  }
+  mainWindow = new BrowserWindow(windowOptions);
 
   mainWindow.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
   mainWindow.once("ready-to-show", () => {
@@ -64,9 +67,12 @@ function createWindow() {
   if (capturePath) {
     mainWindow.webContents.once("did-finish-load", async () => {
       try {
-        await waitForRendererCondition(
-          "!document.querySelector('#sourceCard').classList.contains('hidden')"
-        );
+        const captureWithSource =
+          Boolean(process.env.REPLICATION_DEMO_VIDEO) ||
+          process.env.REPLICATION_CAPTURE_ACTION === "prepare";
+        await waitForRendererCondition(captureWithSource
+          ? "!document.querySelector('#sourceCard').classList.contains('hidden')"
+          : "!document.querySelector('#dropZone').classList.contains('hidden')");
         if (process.env.REPLICATION_CAPTURE_ACTION === "prepare") {
           await mainWindow.webContents.executeJavaScript(
             "document.querySelector('#primaryButton').click(); true"
@@ -169,6 +175,9 @@ function registerIpc() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.abo.replication");
+  }
   runManager = new RunManager({
     dataRoot: resolveDataRoot(),
     assetRoot: path.join(projectRoot(), "assets")

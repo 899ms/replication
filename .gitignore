@@ -1,6 +1,7 @@
 node_modules/
 .venv/
 dist/
+vendor/replication-runtime/
 .env
 .env.*
 !.env.example

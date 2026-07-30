@@ -1,6 +1,6 @@
 {
   "name": "replication",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A focused desktop app that turns one source video into three publishable replicas.",
   "main": "src/main/index.js",
   "author": "abo",
@@ -13,10 +13,13 @@
     "test:integration": "npm run guard && node scripts/smoke-prepare.js",
     "doctor": "node scripts/doctor.js",
     "setup:python": "node scripts/setup-python.js",
-    "configure": "python3 scripts/configure-runtime.py",
-    "icon:build": "png2icons assets/icon-1024.png assets/Replication -icns -bc",
+    "configure": "node scripts/run-python.js scripts/configure-runtime.py",
+    "icon:build": "png2icons assets/icon-1024.png assets/Replication -allwe -bc",
+    "prepare:win-runtime": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-windows-runtime.ps1",
+    "verify:win-runtime": "node scripts/verify-windows-runtime.js vendor/replication-runtime",
     "sign:mac": "codesign --force --deep --sign - dist/Replication-darwin-arm64/Replication.app",
-    "build:mac": "npm run guard && npm run icon:build && electron-packager . Replication --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --download.cacheRoot=/private/tmp/replication-electron-cache --app-bundle-id=com.abo.replication --app-category-type=public.app-category.video --app-version=0.2.0 --icon=assets/Replication.icns --ignore='^/(\\.venv|dist|tests|scripts|assets/Replication\\.iconset)' && npm run sign:mac"
+    "build:mac": "npm run guard && npm run icon:build && electron-packager . Replication --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --download.cacheRoot=/private/tmp/replication-electron-cache --app-bundle-id=com.abo.replication --app-category-type=public.app-category.video --app-version=0.3.0 --icon=assets/Replication.icns --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && npm run sign:mac",
+    "build:win": "npm run guard && npm run verify:win-runtime && npm run icon:build && electron-packager . Replication --platform=win32 --arch=x64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --app-version=0.3.0 --icon=assets/Replication.ico --extra-resource=vendor/replication-runtime --extra-resource=scripts/configure-runtime.py --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && node scripts/finalize-windows-package.js"
   },
   "devDependencies": {
     "@electron/packager": "20.0.4",

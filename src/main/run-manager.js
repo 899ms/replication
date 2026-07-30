@@ -7,6 +7,11 @@ const { pathToFileURL } = require("node:url");
 const { promisify } = require("node:util");
 
 const { getVariants } = require("../core/variants");
+const {
+  bundledRuntimePaths,
+  fallbackPython,
+  localVenvPython
+} = require("../core/platform-runtime");
 const { normalizeProbe, validateVideoPath } = require("../core/video-contract");
 const { importVideoFromLink } = require("./video-link-importer");
 
@@ -22,14 +27,37 @@ function unpackedRuntimePath(candidate) {
 const DEFAULT_SKILL_ROOT = unpackedRuntimePath(
   path.resolve(__dirname, "../../runtime/seedance-face-swap")
 );
-const LOCAL_VENV_PYTHON = path.resolve(__dirname, "../../.venv/bin/python");
-const DEFAULT_PYTHON = fs.existsSync(LOCAL_VENV_PYTHON) ? LOCAL_VENV_PYTHON : "python3";
+const PROJECT_ROOT = path.resolve(__dirname, "../..");
+const BUNDLED_RUNTIME_ROOT = bundledRuntimePaths({
+  projectRoot: PROJECT_ROOT
+}).find((candidate) => fs.existsSync(candidate));
+const BUNDLED_PYTHON = BUNDLED_RUNTIME_ROOT
+  ? path.join(BUNDLED_RUNTIME_ROOT, "python", "python.exe")
+  : null;
+const BUNDLED_FFMPEG = BUNDLED_RUNTIME_ROOT
+  ? path.join(BUNDLED_RUNTIME_ROOT, "ffmpeg", "ffmpeg.exe")
+  : null;
+const BUNDLED_FFPROBE = BUNDLED_RUNTIME_ROOT
+  ? path.join(BUNDLED_RUNTIME_ROOT, "ffmpeg", "ffprobe.exe")
+  : null;
+const LOCAL_VENV_PYTHON = localVenvPython(PROJECT_ROOT);
+const DEFAULT_PYTHON = [BUNDLED_PYTHON, LOCAL_VENV_PYTHON].find(
+  (candidate) => candidate && fs.existsSync(candidate)
+) || fallbackPython();
 const DEFAULT_FFPROBE = [
   process.env.REPLICATION_FFPROBE,
+  BUNDLED_FFPROBE,
   "/opt/homebrew/bin/ffprobe",
   "/usr/local/bin/ffprobe",
   "/usr/bin/ffprobe"
 ].find((candidate) => candidate && (path.isAbsolute(candidate) ? fs.existsSync(candidate) : true)) || "ffprobe";
+const DEFAULT_FFMPEG = [
+  process.env.REPLICATION_FFMPEG,
+  BUNDLED_FFMPEG,
+  "/opt/homebrew/bin/ffmpeg",
+  "/usr/local/bin/ffmpeg",
+  "/usr/bin/ffmpeg"
+].find((candidate) => candidate && (path.isAbsolute(candidate) ? fs.existsSync(candidate) : true)) || "ffmpeg";
 const LOCAL_TRACKING_INTERRUPTED_MESSAGE =
   "APP 在任务执行期间被关闭，本地跟踪已中断；未拿到远端任务 ID 的版本无法恢复。";
 const RECOVERY_STATUS_MESSAGE = "正在恢复远端任务；不会重复付费提交。";
@@ -124,6 +152,7 @@ class RunManager extends EventEmitter {
     this.skillRoot = options.skillRoot || process.env.REPLICATION_FACE_SWAP_SKILL || DEFAULT_SKILL_ROOT;
     this.python = options.python || process.env.REPLICATION_PYTHON || DEFAULT_PYTHON;
     this.ffprobe = options.ffprobe || DEFAULT_FFPROBE;
+    this.ffmpeg = options.ffmpeg || DEFAULT_FFMPEG;
     this.linkImporter = options.linkImporter || importVideoFromLink;
     this.resumeScript = options.resumeScript || null;
     this.processes = new Map();
@@ -134,6 +163,14 @@ class RunManager extends EventEmitter {
 
   get runsRoot() {
     return path.join(this.dataRoot, "runs");
+  }
+
+  pythonEnvironment() {
+    return {
+      ...process.env,
+      REPLICATION_FFMPEG: this.ffmpeg,
+      REPLICATION_FFPROBE: this.ffprobe
+    };
   }
 
   runDir(runId) {
@@ -525,7 +562,10 @@ class RunManager extends EventEmitter {
             "--expression-intensity",
             variant.expressionIntensity
           ],
-          { maxBuffer: 16 * 1024 * 1024 }
+          {
+            env: this.pythonEnvironment(),
+            maxBuffer: 16 * 1024 * 1024
+          }
         );
 
         run = this.getRun(runId);
@@ -701,7 +741,7 @@ class RunManager extends EventEmitter {
         {
           cwd: path.dirname(variant.contractPath),
           env: {
-            ...process.env,
+            ...this.pythonEnvironment(),
             REPLICATION_FACE_SWAP_SUBMITTER: path.join(
               this.skillRoot,
               "scripts",
@@ -802,7 +842,7 @@ class RunManager extends EventEmitter {
         {
           cwd: path.dirname(variant.contractPath),
           env: {
-            ...process.env,
+            ...this.pythonEnvironment(),
             REPLICATION_FACE_SWAP_SUBMITTER: path.join(
               this.skillRoot,
               "scripts",

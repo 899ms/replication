@@ -13,6 +13,8 @@ const DEFAULT_MEOWLOAD_CANDIDATES = [
   "/usr/local/bin/MeowLoad",
   "/opt/homebrew/bin/meowload",
   "/opt/homebrew/bin/MeowLoad",
+  "meowload.exe",
+  "MeowLoad.exe",
   "meowload",
   "MeowLoad"
 ].filter(Boolean);
