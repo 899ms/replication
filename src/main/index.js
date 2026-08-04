@@ -1,11 +1,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } = require("electron");
 
 const { listLocalAssets } = require("./local-assets");
+const { MinimaxH3ConnectionManager } = require("./minimax-h3-connections");
+const { getMinimaxH3Status } = require("./minimax-h3-runtime");
 const { RunManager } = require("./run-manager");
 
 let mainWindow;
+let h3ConnectionManager;
 let runManager;
 
 function delay(milliseconds) {
@@ -38,11 +41,11 @@ function resolveDataRoot() {
 
 function createWindow() {
   const windowOptions = {
-    width: 1320,
-    height: 860,
-    minWidth: 1080,
-    minHeight: 720,
-    title: "Replication",
+    width: 1500,
+    height: 940,
+    minWidth: 1180,
+    minHeight: 760,
+    title: "工作台复刻 2.0",
     backgroundColor: "#F3F2EC",
     show: false,
     webPreferences: {
@@ -73,6 +76,40 @@ function createWindow() {
         await waitForRendererCondition(captureWithSource
           ? "!document.querySelector('#sourceCard').classList.contains('hidden')"
           : "!document.querySelector('#dropZone').classList.contains('hidden')");
+        if (["history", "history-detail"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
+          await mainWindow.webContents.executeJavaScript(
+            "document.querySelector('[data-rail-view=\"history\"]').click(); true"
+          );
+          await waitForRendererCondition(
+            "!document.querySelector('#historyView').classList.contains('hidden') && !document.querySelector('#historySummary').textContent.includes('正在读取')"
+          );
+        }
+        if (["minimax-h3", "minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
+          await mainWindow.webContents.executeJavaScript(
+            "document.querySelector('[data-rail-view=\"minimax-h3\"]').click(); true"
+          );
+          await waitForRendererCondition(
+            "!document.querySelector('#minimaxH3View').classList.contains('hidden') && document.querySelector('#h3LiveBadge').dataset.state !== 'checking'"
+          );
+          if (["minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
+            if (process.env.REPLICATION_CAPTURE_ACTION === "minimax-h3-ssh") {
+              await mainWindow.webContents.executeJavaScript(
+                "document.querySelector('[data-h3-connector=\"ssh\"]').click(); true"
+              );
+            }
+            await mainWindow.webContents.executeJavaScript(
+              "document.querySelector('.workspace').scrollTo({ top: document.querySelector('.workspace').scrollHeight, behavior: 'instant' }); true"
+            );
+          }
+        }
+        if (process.env.REPLICATION_CAPTURE_ACTION === "history-detail") {
+          await mainWindow.webContents.executeJavaScript(
+            "document.querySelector('[data-history-run-id] .history-open-button')?.click(); true"
+          );
+          await waitForRendererCondition(
+            "!document.querySelector('#resultsSection').classList.contains('hidden')"
+          );
+        }
         if (process.env.REPLICATION_CAPTURE_ACTION === "prepare") {
           await mainWindow.webContents.executeJavaScript(
             "document.querySelector('#primaryButton').click(); true"
@@ -98,6 +135,7 @@ function registerIpc() {
     demoVideoPath: process.env.REPLICATION_DEMO_VIDEO || null,
     demoPersonImagePath: process.env.REPLICATION_DEMO_PERSON_IMAGE || null,
     demoAudioReferencePath: process.env.REPLICATION_DEMO_AUDIO_REFERENCE || null,
+    initialView: process.env.REPLICATION_INITIAL_VIEW || "replication",
     appVersion: app.getVersion(),
     packaged: app.isPackaged
   }));
@@ -153,6 +191,42 @@ function registerIpc() {
   );
   ipcMain.handle("replication:get-run", (_event, runId) => runManager.getRun(runId));
   ipcMain.handle("replication:list-runs", () => runManager.listRuns());
+  ipcMain.handle("replication:minimax-h3-status", () => getMinimaxH3Status());
+  ipcMain.handle("replication:minimax-h3-connections", () =>
+    h3ConnectionManager.publicConfig()
+  );
+  ipcMain.handle("replication:save-minimax-h3-api", (_event, input) =>
+    h3ConnectionManager.saveApi(input)
+  );
+  ipcMain.handle("replication:test-minimax-h3-api", () =>
+    h3ConnectionManager.testApi()
+  );
+  ipcMain.handle("replication:save-minimax-h3-ssh", (_event, input) =>
+    h3ConnectionManager.saveSsh(input)
+  );
+  ipcMain.handle("replication:test-minimax-h3-ssh", () =>
+    h3ConnectionManager.testSsh()
+  );
+  ipcMain.handle("replication:select-minimax-h3-identity", async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: "选择 SSH 私钥文件",
+      properties: ["openFile", "showHiddenFiles"]
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle("replication:open-minimax-h3", async () => {
+    const status = await getMinimaxH3Status();
+    if (status.connection?.endpoint) {
+      await shell.openExternal(status.connection.endpoint);
+      return { opened: "endpoint", target: status.connection.endpoint };
+    }
+    if (status.comfyRoot) {
+      const error = await shell.openPath(status.comfyRoot);
+      if (error) throw new Error(error);
+      return { opened: "workspace", target: status.comfyRoot };
+    }
+    throw new Error("未找到本机 ComfyUI 工作区，请先设置 REPLICATION_MINIMAX_H3_COMFY_ROOT。");
+  });
   ipcMain.handle("replication:submit-run", (_event, runId) => runManager.submitRun(runId));
   ipcMain.handle("replication:cancel-run", (_event, runId) => runManager.cancelRun(runId));
 
@@ -178,9 +252,14 @@ app.whenReady().then(() => {
   if (process.platform === "win32") {
     app.setAppUserModelId("com.abo.replication");
   }
+  const dataRoot = resolveDataRoot();
   runManager = new RunManager({
-    dataRoot: resolveDataRoot(),
+    dataRoot,
     assetRoot: path.join(projectRoot(), "assets")
+  });
+  h3ConnectionManager = new MinimaxH3ConnectionManager({
+    dataRoot,
+    secretBox: safeStorage
   });
   registerIpc();
   createWindow();

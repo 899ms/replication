@@ -10,7 +10,7 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self' file:; img-src 'self' file: data:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self';"
     />
-    <title>Replication</title>
+    <title>工作台复刻 2.0</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -21,13 +21,42 @@
             <span class="brand-square brand-square-back"></span>
             <span class="brand-square brand-square-front">R</span>
           </div>
-          <span>Replication</span>
+          <span>工作台复刻 2.0</span>
         </div>
 
         <div class="rail-copy">
           <p class="rail-kicker">ONE VIDEO IN</p>
           <p class="rail-statement">Skill-led replicas out.</p>
         </div>
+
+        <nav class="rail-nav" aria-label="工作台复刻 2.0 工作区">
+          <button
+            class="rail-nav-item is-active"
+            data-rail-view="replication"
+            type="button"
+            aria-current="page"
+          >
+            <span class="rail-nav-icon rail-nav-icon-primary" aria-hidden="true">R</span>
+            <span class="rail-nav-copy">
+              <strong>视频复刻</strong>
+              <small>一个视频生成三版</small>
+            </span>
+          </button>
+          <button class="rail-nav-item" data-rail-view="history" type="button">
+            <span class="rail-nav-icon" aria-hidden="true">记</span>
+            <span class="rail-nav-copy">
+              <strong>运行记录</strong>
+              <small>状态 · 任务 · 真实产物</small>
+            </span>
+          </button>
+          <button class="rail-nav-item rail-nav-item-h3" data-rail-view="minimax-h3" type="button">
+            <span class="rail-nav-icon rail-nav-icon-h3" aria-hidden="true">H3</span>
+            <span class="rail-nav-copy">
+              <strong>MiniMax H3</strong>
+              <small>本机多模态视频工作台</small>
+            </span>
+          </button>
+        </nav>
 
         <div class="capability-status">
           <span class="status-light"></span>
@@ -39,12 +68,12 @@
       </aside>
 
       <main class="workspace">
-        <header class="topbar">
+        <header class="topbar" id="replicationHeader">
           <div>
-            <p class="eyebrow">DESKTOP APP · 0.3</p>
+            <p class="eyebrow">DESKTOP WORKBENCH · 2.0</p>
             <h1>复刻视频，不复刻工作流。</h1>
             <p class="subtitle">
-              上传一条视频，选择替换人物和音色，Replication 用内置起手策略生成三个可发布复刻版本。
+              上传一条视频，选择替换人物和音色，工作台复刻 2.0 用本地起手 Skill 生成三个可发布复刻版本。
             </p>
           </div>
           <div class="topbar-actions">
@@ -58,7 +87,7 @@
           </div>
         </header>
 
-        <section class="content-grid">
+        <section class="content-grid" id="replicationContent">
           <div class="source-column">
             <div
               class="drop-zone"
@@ -121,7 +150,7 @@
             <div class="section-heading">
               <div>
                 <p class="eyebrow">AUTO PLAN</p>
-                <h2>内置策略生成 3 个版本</h2>
+                <h2>本地 Skill 生成 3 个版本</h2>
               </div>
               <span class="scope-chip">人物与音色运行时替换</span>
             </div>
@@ -234,6 +263,255 @@
             <p id="resultSummary">生成状态来自真实任务。</p>
           </div>
           <div class="result-grid" id="resultGrid"></div>
+        </section>
+
+        <section class="history-view hidden" id="historyView" aria-labelledby="historyTitle">
+          <header class="topbar history-topbar">
+            <div>
+              <p class="eyebrow">LOCAL RUNS</p>
+              <h1 id="historyTitle">运行记录</h1>
+              <p class="subtitle">
+                这里只显示保存在本机的真实任务、远端状态和已验证产物。
+              </p>
+            </div>
+            <div class="topbar-actions">
+              <button class="secondary-button compact-button" id="refreshHistoryButton" type="button">
+                刷新记录
+              </button>
+              <div class="local-badge">
+                <span></span>
+                本机数据
+              </div>
+            </div>
+          </header>
+
+          <div class="history-panel">
+            <div class="history-panel-heading">
+              <div>
+                <p class="eyebrow">REAL RUN HISTORY</p>
+                <h2>已保存的复刻任务</h2>
+              </div>
+              <p id="historySummary">正在读取本机记录…</p>
+            </div>
+            <div class="history-list" id="historyList" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="h3-view hidden" id="minimaxH3View" aria-labelledby="minimaxH3Title">
+          <header class="topbar h3-topbar">
+            <div>
+              <p class="eyebrow">LOCAL OMNI VIDEO</p>
+              <h1 id="minimaxH3Title">MiniMax H3</h1>
+              <p class="subtitle">
+                复用当前视频、人物和音色参考，连接本机 ComfyUI 的 H3 Reference-to-Video 工作流。
+              </p>
+            </div>
+            <div class="h3-live-badge" id="h3LiveBadge" data-state="checking">
+              <span></span>
+              <strong id="h3StatusLabel">检测中</strong>
+            </div>
+          </header>
+
+          <div class="h3-dashboard">
+            <article class="h3-hero-card">
+              <div class="h3-orbit h3-orbit-one" aria-hidden="true"></div>
+              <div class="h3-orbit h3-orbit-two" aria-hidden="true"></div>
+              <div class="h3-hero-copy">
+                <span class="h3-model-tag">OPEN WEIGHTS · REF2VA</span>
+                <h2>Video + Image + Audio<br />一次给齐。</h2>
+                <p>
+                  H3 原生生成画面与立体声音，支持角色、运镜、动作和音色参考。
+                </p>
+              </div>
+              <div class="h3-capability-row" aria-label="H3 生成模式">
+                <span>T2V</span>
+                <span>I2V</span>
+                <span class="is-primary">R2V</span>
+                <span>STEREO AUDIO</span>
+              </div>
+            </article>
+
+            <article class="h3-runtime-card">
+              <div class="h3-runtime-heading">
+                <div>
+                  <p class="eyebrow">RUNTIME LINK</p>
+                  <h2>本机 H3 运行时</h2>
+                </div>
+                <button class="icon-refresh-button" id="refreshH3Button" type="button" aria-label="重新检测 H3">↻</button>
+              </div>
+              <p class="h3-status-text" id="h3StatusText">正在检测 ComfyUI 和 H3 模型…</p>
+              <dl class="h3-runtime-facts">
+                <div>
+                  <dt>连接</dt>
+                  <dd id="h3EndpointValue">—</dd>
+                </div>
+                <div>
+                  <dt>设备</dt>
+                  <dd id="h3DeviceValue">—</dd>
+                </div>
+              </dl>
+              <div class="h3-check-list" id="h3CheckList">
+                <span data-check="diffusion">生成模型</span>
+                <span data-check="textEncoder">文本编码器</span>
+                <span data-check="videoVae">视频 VAE</span>
+                <span data-check="audioVae">音频 VAE</span>
+              </div>
+              <button class="primary-button h3-open-button" id="openH3Button" type="button" disabled>
+                <span id="openH3ButtonLabel">打开 H3 工作台</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14m-5-5 5 5-5 5" />
+                </svg>
+              </button>
+            </article>
+
+            <article class="h3-input-card">
+              <div class="h3-input-heading">
+                <div>
+                  <p class="eyebrow">CURRENT REFERENCES</p>
+                  <h2>复用当前素材</h2>
+                </div>
+                <button class="text-button" id="editH3InputsButton" type="button">回到视频复刻</button>
+              </div>
+              <div class="h3-reference-grid">
+                <div class="h3-reference-item" data-h3-reference="video">
+                  <span>视</span>
+                  <div><small>REFERENCE VIDEO</small><strong id="h3VideoName">未选择</strong></div>
+                </div>
+                <div class="h3-reference-item" data-h3-reference="person">
+                  <span>人</span>
+                  <div><small>REFERENCE IMAGE</small><strong id="h3PersonName">未选择</strong></div>
+                </div>
+                <div class="h3-reference-item" data-h3-reference="audio">
+                  <span>声</span>
+                  <div><small>REFERENCE AUDIO</small><strong id="h3AudioName">未选择</strong></div>
+                </div>
+              </div>
+              <p class="h3-input-note">模组只读取当前素材状态；真实生成在 ComfyUI H3 工作流内发起。</p>
+            </article>
+
+            <article class="h3-connection-card">
+              <div class="h3-connection-main">
+                <div class="h3-input-heading">
+                  <div>
+                    <p class="eyebrow">CONNECTION PORTS</p>
+                    <h2>接入 MiniMax H3 工作台</h2>
+                  </div>
+                  <span class="secure-storage-chip">凭据安全存储</span>
+                </div>
+
+                <div class="h3-connector-tabs" role="tablist" aria-label="H3 连接方式">
+                  <button type="button" role="tab" data-h3-connector="api" aria-selected="true">
+                    H3 API
+                  </button>
+                  <button type="button" role="tab" data-h3-connector="ssh" aria-selected="false">
+                    SSH 服务器
+                  </button>
+                  <button type="button" role="tab" data-h3-connector="local" aria-selected="false">
+                    本机 ComfyUI
+                  </button>
+                </div>
+
+                <section class="h3-connector-panel" data-h3-connector-panel="api">
+                  <div class="h3-port-heading">
+                    <span class="h3-port-number">API</span>
+                    <div>
+                      <strong>在此处输入 MiniMax H3 / 3.0 API</strong>
+                      <small>API Key 只会进入系统加密存储，不会回显。</small>
+                    </div>
+                  </div>
+                  <div class="h3-form-grid">
+                    <label class="h3-form-field h3-form-field-wide">
+                      <span>API Base URL</span>
+                      <input id="h3ApiEndpoint" type="url" placeholder="https://your-h3-api.example.com" spellcheck="false" />
+                    </label>
+                    <label class="h3-form-field">
+                      <span>模型名称</span>
+                      <input id="h3ApiModel" type="text" value="MiniMax-H3" spellcheck="false" />
+                    </label>
+                    <label class="h3-form-field">
+                      <span>API Key</span>
+                      <input id="h3ApiKey" type="password" placeholder="在此处输入 API" autocomplete="new-password" spellcheck="false" />
+                    </label>
+                  </div>
+                  <div class="h3-port-actions">
+                    <p id="h3ApiStatus">尚未配置 API。</p>
+                    <button class="primary-button h3-save-button" id="saveH3ApiButton" type="button">保存并检测</button>
+                  </div>
+                </section>
+
+                <section class="h3-connector-panel hidden" data-h3-connector-panel="ssh">
+                  <div class="h3-port-heading">
+                    <span class="h3-port-number">SSH</span>
+                    <div>
+                      <strong>接入自己租用的 GPU 服务器</strong>
+                      <small>使用 BatchMode 和本机密钥做只读连通测试，不接收 SSH 密码。</small>
+                    </div>
+                  </div>
+                  <div class="h3-form-grid h3-ssh-grid">
+                    <label class="h3-form-field h3-form-field-host">
+                      <span>服务器地址</span>
+                      <input id="h3SshHost" type="text" placeholder="gpu.example.com" spellcheck="false" />
+                    </label>
+                    <label class="h3-form-field h3-form-field-port">
+                      <span>端口</span>
+                      <input id="h3SshPort" type="number" min="1" max="65535" value="22" />
+                    </label>
+                    <label class="h3-form-field">
+                      <span>用户名</span>
+                      <input id="h3SshUsername" type="text" placeholder="root" spellcheck="false" />
+                    </label>
+                    <label class="h3-form-field">
+                      <span>远程工作目录</span>
+                      <input id="h3SshWorkspace" type="text" placeholder="/root/ComfyUI" spellcheck="false" />
+                    </label>
+                    <label class="h3-form-field h3-form-field-wide">
+                      <span>SSH 密钥文件</span>
+                      <span class="h3-file-input-row">
+                        <input id="h3SshIdentity" type="text" placeholder="~/.ssh/id_ed25519" readonly />
+                        <button id="chooseH3IdentityButton" type="button">选择密钥</button>
+                      </span>
+                    </label>
+                  </div>
+                  <div class="h3-port-actions">
+                    <p id="h3SshStatus">尚未配置 SSH 服务器。</p>
+                    <button class="primary-button h3-save-button" id="saveH3SshButton" type="button">保存并测试 SSH</button>
+                  </div>
+                </section>
+
+                <section class="h3-connector-panel hidden" data-h3-connector-panel="local">
+                  <div class="h3-port-heading">
+                    <span class="h3-port-number">127</span>
+                    <div>
+                      <strong>使用本机 ComfyUI</strong>
+                      <small>自动检测 6006 和 8188 端口，以及 H3 必需模型文件。</small>
+                    </div>
+                  </div>
+                  <div class="h3-local-port-state">
+                    <span id="h3LocalConnectorDot"></span>
+                    <strong id="h3LocalConnectorStatus">正在读取本机状态…</strong>
+                  </div>
+                  <div class="h3-port-actions">
+                    <p>本机接入不需要保存额外凭据。</p>
+                    <button class="secondary-button h3-save-button" id="detectH3LocalButton" type="button">重新检测</button>
+                  </div>
+                </section>
+              </div>
+
+              <aside class="h3-connection-flow" aria-label="H3 连接流程">
+                <p class="eyebrow">WORKBENCH FLOW</p>
+                <h3>接入后开始生成</h3>
+                <ol>
+                  <li><span>01</span><div><strong>选择入口</strong><small>本机、SSH 或 H3 API</small></div></li>
+                  <li><span>02</span><div><strong>验证连接</strong><small>密钥、端口与模型状态</small></div></li>
+                  <li><span>03</span><div><strong>提交生成</strong><small>使用当前视频、人物与音色</small></div></li>
+                </ol>
+                <div class="h3-flow-note">
+                  <span></span>
+                  真实付费 API 任务在提交前仍会单独请求授权。
+                </div>
+              </aside>
+            </article>
+          </div>
         </section>
       </main>
     </div>

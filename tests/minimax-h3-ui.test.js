@@ -1,0 +1,41 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+
+const projectRoot = path.resolve(__dirname, "..");
+const html = fs.readFileSync(path.join(projectRoot, "src", "renderer", "index.html"), "utf8");
+const renderer = fs.readFileSync(path.join(projectRoot, "src", "renderer", "app.js"), "utf8");
+const preload = fs.readFileSync(path.join(projectRoot, "src", "preload", "index.js"), "utf8");
+const main = fs.readFileSync(path.join(projectRoot, "src", "main", "index.js"), "utf8");
+
+test("MiniMax H3 is an actionable workbench module backed by runtime IPC", () => {
+  assert.match(html, /data-rail-view="minimax-h3"/);
+  assert.match(html, /id="minimaxH3View"/);
+  assert.match(html, /id="refreshH3Button"/);
+  assert.match(html, /id="openH3Button"/);
+  assert.match(html, /id="h3ApiKey"/);
+  assert.match(html, /在此处输入 MiniMax H3 \/ 3\.0 API/);
+  assert.match(html, /data-h3-connector="ssh"/);
+  assert.match(html, /id="h3SshHost"/);
+  assert.match(renderer, /h3Nav\.addEventListener\("click", showH3View\)/);
+  assert.match(renderer, /window\.replication\.getMinimaxH3Status\(\)/);
+  assert.match(preload, /replication:minimax-h3-status/);
+  assert.match(preload, /replication:save-minimax-h3-api/);
+  assert.match(preload, /replication:test-minimax-h3-ssh/);
+  assert.match(main, /getMinimaxH3Status\(\)/);
+});
+
+test("desktop workbench opens at the enlarged dimensions", () => {
+  assert.match(main, /width:\s*1500/);
+  assert.match(main, /height:\s*940/);
+  assert.match(main, /minWidth:\s*1180/);
+});
+
+test("2.0 product branding is visible in the packaged workbench", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
+  assert.equal(pkg.version, "2.0.0");
+  assert.match(html, /<title>工作台复刻 2\.0<\/title>/);
+  assert.match(html, /DESKTOP WORKBENCH · 2\.0/);
+  assert.match(main, /title:\s*"工作台复刻 2\.0"/);
+});

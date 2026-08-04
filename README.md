@@ -1,12 +1,20 @@
-# Replication
+# 工作台复刻 2.0
 
-Replication 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，一次生成 3 个 Seedance 身份替换版本：
+工作台复刻 2.0 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，一次生成 3 个 Seedance 身份替换版本：
 
 1. 黄金三秒开场；
 2. 冲击链开场；
 3. 异常转折开场。
 
 原故事、场景、镜头逻辑和中心含义保持锁定。
+
+左侧工作区还包含 MiniMax H3 模组。该模组会读取当前视频、人物图和音色参考，并提供三种连接入口：
+
+- 本机 ComfyUI：真实检测 6006/8188 服务以及 H3 生成模型、文本编码器、视频 VAE 和音频 VAE。
+- SSH 服务器：保存主机、端口、用户名、远程工作目录和本机私钥路径，使用 `BatchMode` 做无密码连通测试。
+- H3 API：输入 API Base URL、模型名称和 API Key；API Key 通过 Electron `safeStorage` 加密，不写入仓库、日志或前端配置。
+
+可通过 `REPLICATION_MINIMAX_H3_URL` 和 `REPLICATION_MINIMAX_H3_COMFY_ROOT` 覆盖默认本机连接与工作区路径，也可通过 `MINIMAX_H3_API_KEY` 从环境变量提供 API 凭据。真实付费任务在提交前仍需要当次明确授权。
 
 ## Windows 便携版
 
@@ -36,6 +44,8 @@ Windows 发布包已内置：
 MeowLoad 仍是可选组件：只有“粘贴视频链接导入”需要；直接选择本地视频不需要。
 
 ## macOS / 源码运行
+
+Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `工作台复刻-2.0.0-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
 
 要求：
 

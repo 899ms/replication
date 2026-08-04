@@ -7,6 +7,7 @@ const ui = {
   cancelAuthorizationButton: document.querySelector("#cancelAuthorizationButton"),
   changeVideoButton: document.querySelector("#changeVideoButton"),
   choosePersonButton: document.querySelector("#choosePersonButton"),
+  chooseH3IdentityButton: document.querySelector("#chooseH3IdentityButton"),
   chooseVoiceButton: document.querySelector("#chooseVoiceButton"),
   chooseVideoButton: document.querySelector("#chooseVideoButton"),
   cancelLinkButton: document.querySelector("#cancelLinkButton"),
@@ -14,20 +15,57 @@ const ui = {
   closeModalButton: document.querySelector("#closeModalButton"),
   confirmAuthorizationButton: document.querySelector("#confirmAuthorizationButton"),
   dropZone: document.querySelector("#dropZone"),
+  editH3InputsButton: document.querySelector("#editH3InputsButton"),
+  h3AudioName: document.querySelector("#h3AudioName"),
+  h3ApiEndpoint: document.querySelector("#h3ApiEndpoint"),
+  h3ApiKey: document.querySelector("#h3ApiKey"),
+  h3ApiModel: document.querySelector("#h3ApiModel"),
+  h3ApiStatus: document.querySelector("#h3ApiStatus"),
+  h3CheckList: document.querySelector("#h3CheckList"),
+  h3DeviceValue: document.querySelector("#h3DeviceValue"),
+  h3EndpointValue: document.querySelector("#h3EndpointValue"),
+  h3LiveBadge: document.querySelector("#h3LiveBadge"),
+  h3LocalConnectorStatus: document.querySelector("#h3LocalConnectorStatus"),
+  h3LocalConnectorDot: document.querySelector("#h3LocalConnectorDot"),
+  h3Nav: document.querySelector('[data-rail-view="minimax-h3"]'),
+  h3PersonName: document.querySelector("#h3PersonName"),
+  h3StatusLabel: document.querySelector("#h3StatusLabel"),
+  h3StatusText: document.querySelector("#h3StatusText"),
+  h3SshHost: document.querySelector("#h3SshHost"),
+  h3SshIdentity: document.querySelector("#h3SshIdentity"),
+  h3SshPort: document.querySelector("#h3SshPort"),
+  h3SshStatus: document.querySelector("#h3SshStatus"),
+  h3SshUsername: document.querySelector("#h3SshUsername"),
+  h3SshWorkspace: document.querySelector("#h3SshWorkspace"),
+  h3VideoName: document.querySelector("#h3VideoName"),
+  historyList: document.querySelector("#historyList"),
+  historySummary: document.querySelector("#historySummary"),
+  historyView: document.querySelector("#historyView"),
   importLinkButton: document.querySelector("#importLinkButton"),
   linkInput: document.querySelector("#linkInput"),
   linkModal: document.querySelector("#linkModal"),
   linkStatus: document.querySelector("#linkStatus"),
   openLinkButton: document.querySelector("#openLinkButton"),
+  openH3Button: document.querySelector("#openH3Button"),
+  openH3ButtonLabel: document.querySelector("#openH3ButtonLabel"),
   personName: document.querySelector("#personName"),
   personCandidateList: document.querySelector("#personCandidateList"),
   personPreview: document.querySelector("#personPreview"),
   primaryButton: document.querySelector("#primaryButton"),
   primaryButtonLabel: document.querySelector("#primaryButtonLabel"),
+  refreshHistoryButton: document.querySelector("#refreshHistoryButton"),
+  refreshH3Button: document.querySelector("#refreshH3Button"),
+  detectH3LocalButton: document.querySelector("#detectH3LocalButton"),
   refreshAssetsButton: document.querySelector("#refreshAssetsButton"),
+  replicationContent: document.querySelector("#replicationContent"),
+  replicationHeader: document.querySelector("#replicationHeader"),
+  replicationNav: document.querySelector('[data-rail-view="replication"]'),
+  minimaxH3View: document.querySelector("#minimaxH3View"),
   resultGrid: document.querySelector("#resultGrid"),
   resultSummary: document.querySelector("#resultSummary"),
   resultsSection: document.querySelector("#resultsSection"),
+  saveH3ApiButton: document.querySelector("#saveH3ApiButton"),
+  saveH3SshButton: document.querySelector("#saveH3SshButton"),
   sourceCard: document.querySelector("#sourceCard"),
   sourceCodec: document.querySelector("#sourceCodec"),
   sourceDuration: document.querySelector("#sourceDuration"),
@@ -37,14 +75,20 @@ const ui = {
   sourceVideo: document.querySelector("#sourceVideo"),
   toast: document.querySelector("#toast"),
   toastMessage: document.querySelector("#toastMessage"),
+  historyNav: document.querySelector('[data-rail-view="history"]'),
   voiceCandidateList: document.querySelector("#voiceCandidateList"),
   voiceName: document.querySelector("#voiceName")
 };
 
 const state = {
+  activeView: "replication",
   audioReferencePath: null,
   busy: false,
   inspection: null,
+  historyRuns: [],
+  h3Connections: null,
+  h3ConnectorMode: "api",
+  h3Status: null,
   localAssets: null,
   personImagePath: null,
   pollTimer: null,
@@ -63,12 +107,43 @@ const CURRENT_VARIANT_IDS = new Set(Object.keys(VARIANT_LABELS));
 
 const STATUS_LABELS = {
   draft: "待准备",
+  waiting_input: "等待输入",
+  waiting_authorization: "等待授权",
   queued: "已排队",
   running: "执行中",
-  waiting_authorization: "等待授权",
   succeeded: "已完成",
+  no_result: "无有效结果",
+  unsupported: "不支持",
   failed: "失败",
   cancelled: "已取消"
+};
+
+const HISTORY_MARKS = {
+  succeeded: "OK",
+  running: "RUN",
+  queued: "WAIT",
+  waiting_authorization: "AUTH",
+  failed: "!",
+  cancelled: "×"
+};
+
+const H3_STATUS_COPY = {
+  ready: {
+    label: "已就绪",
+    text: "ComfyUI 已连接，H3 生成模型、文本编码器和视音频 VAE 齐全。"
+  },
+  service_offline: {
+    label: "未启动",
+    text: "已找到本机 ComfyUI，但 H3 服务尚未启动。打开工作区后启动 6006 或 8188 端口。"
+  },
+  models_missing: {
+    label: "缺少模型",
+    text: "ComfyUI 已连接，但 H3 必需模型文件尚未齐全。"
+  },
+  not_installed: {
+    label: "待配置",
+    text: "尚未找到 ComfyUI 工作区或可用的 H3 服务。"
+  }
 };
 
 function formatBytes(bytes) {
@@ -81,6 +156,18 @@ function formatBytes(bytes) {
 function formatDuration(seconds) {
   if (!Number.isFinite(seconds)) return "—";
   return `${seconds.toFixed(1)}s`;
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "时间未知";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
 }
 
 function baseName(filePath) {
@@ -133,6 +220,337 @@ function setSteps(activeStep) {
     const index = order.indexOf(item.dataset.step);
     item.classList.toggle("is-active", index === activeIndex);
     item.classList.toggle("is-complete", index < activeIndex);
+  }
+}
+
+function setRailView(activeView) {
+  state.activeView = activeView;
+  for (const item of document.querySelectorAll("[data-rail-view]")) {
+    const active = item.dataset.railView === activeView;
+    item.classList.toggle("is-active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  }
+}
+
+function showReplicationView({ focusResults = false } = {}) {
+  setRailView("replication");
+  ui.historyView.classList.add("hidden");
+  ui.minimaxH3View.classList.add("hidden");
+  ui.replicationHeader.classList.remove("hidden");
+  ui.replicationContent.classList.remove("hidden");
+  ui.resultsSection.classList.toggle("hidden", !state.run);
+  if (focusResults && state.run) {
+    window.setTimeout(() => ui.resultsSection.scrollIntoView({ block: "start", behavior: "smooth" }), 0);
+  }
+}
+
+async function showHistoryView() {
+  setRailView("history");
+  ui.replicationHeader.classList.add("hidden");
+  ui.replicationContent.classList.add("hidden");
+  ui.resultsSection.classList.add("hidden");
+  ui.minimaxH3View.classList.add("hidden");
+  ui.historyView.classList.remove("hidden");
+  await refreshHistory();
+}
+
+function renderH3References() {
+  ui.h3VideoName.textContent = baseName(state.selectedPath);
+  ui.h3PersonName.textContent = baseName(state.personImagePath);
+  ui.h3AudioName.textContent = baseName(state.audioReferencePath);
+  const values = {
+    video: state.selectedPath,
+    person: state.personImagePath,
+    audio: state.audioReferencePath
+  };
+  for (const item of document.querySelectorAll("[data-h3-reference]")) {
+    item.classList.toggle("is-ready", Boolean(values[item.dataset.h3Reference]));
+  }
+}
+
+function setH3Connector(mode) {
+  state.h3ConnectorMode = mode;
+  for (const tab of document.querySelectorAll("[data-h3-connector]")) {
+    const active = tab.dataset.h3Connector === mode;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  }
+  for (const panel of document.querySelectorAll("[data-h3-connector-panel]")) {
+    panel.classList.toggle("hidden", panel.dataset.h3ConnectorPanel !== mode);
+  }
+}
+
+function renderH3Connections(config) {
+  state.h3Connections = config;
+  ui.h3ApiEndpoint.value = config.api?.endpoint || "";
+  ui.h3ApiModel.value = config.api?.model || "MiniMax-H3";
+  ui.h3ApiKey.value = "";
+  ui.h3ApiKey.placeholder = config.api?.hasApiKey
+    ? "API Key 已安全保存；留空则保持不变"
+    : "在此处输入 API";
+  ui.h3ApiStatus.textContent = config.api?.hasApiKey
+    ? `API 凭据已保存（${config.api.credentialSource === "environment" ? "环境变量" : "系统加密存储"}）。`
+    : "尚未配置 API。";
+
+  ui.h3SshHost.value = config.ssh?.host || "";
+  ui.h3SshPort.value = config.ssh?.port || 22;
+  ui.h3SshUsername.value = config.ssh?.username || "";
+  ui.h3SshWorkspace.value = config.ssh?.workspacePath || "";
+  ui.h3SshIdentity.value = config.ssh?.identityFile || "";
+  ui.h3SshStatus.textContent = config.ssh?.host
+    ? `SSH 配置已保存：${config.ssh.username}@${config.ssh.host}:${config.ssh.port}`
+    : "尚未配置 SSH 服务器。";
+}
+
+async function loadH3Connections() {
+  try {
+    renderH3Connections(await window.replication.getMinimaxH3Connections());
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function saveAndTestH3Api() {
+  ui.saveH3ApiButton.disabled = true;
+  ui.saveH3ApiButton.textContent = "正在安全保存…";
+  let saved = false;
+  try {
+    await window.replication.saveMinimaxH3Api({
+      endpoint: ui.h3ApiEndpoint.value,
+      model: ui.h3ApiModel.value,
+      apiKey: ui.h3ApiKey.value
+    });
+    saved = true;
+    ui.h3ApiKey.value = "";
+    ui.h3ApiStatus.textContent = "API 凭据已安全保存，正在检测连接…";
+    const result = await window.replication.testMinimaxH3Api();
+    await loadH3Connections();
+    ui.h3ApiStatus.textContent = result.message;
+  } catch (error) {
+    ui.h3ApiStatus.textContent = saved
+      ? `API 已保存，但检测未通过：${error.message}`
+      : error.message;
+    showError(error);
+  } finally {
+    ui.saveH3ApiButton.disabled = false;
+    ui.saveH3ApiButton.textContent = "保存并检测";
+  }
+}
+
+async function chooseH3Identity() {
+  try {
+    const selected = await window.replication.selectMinimaxH3Identity();
+    if (selected) ui.h3SshIdentity.value = selected;
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function saveAndTestH3Ssh() {
+  ui.saveH3SshButton.disabled = true;
+  ui.saveH3SshButton.textContent = "正在测试 SSH…";
+  let saved = false;
+  try {
+    await window.replication.saveMinimaxH3Ssh({
+      host: ui.h3SshHost.value,
+      port: ui.h3SshPort.value,
+      username: ui.h3SshUsername.value,
+      workspacePath: ui.h3SshWorkspace.value,
+      identityFile: ui.h3SshIdentity.value
+    });
+    saved = true;
+    const result = await window.replication.testMinimaxH3Ssh();
+    await loadH3Connections();
+    ui.h3SshStatus.textContent = result.message;
+  } catch (error) {
+    ui.h3SshStatus.textContent = saved
+      ? `SSH 已保存，但连接失败：${error.message}`
+      : error.message;
+    showError(error);
+  } finally {
+    ui.saveH3SshButton.disabled = false;
+    ui.saveH3SshButton.textContent = "保存并测试 SSH";
+  }
+}
+
+function renderH3Status(status) {
+  state.h3Status = status;
+  const copy = H3_STATUS_COPY[status.state] || H3_STATUS_COPY.not_installed;
+  ui.h3LiveBadge.dataset.state = status.state;
+  ui.h3StatusLabel.textContent = copy.label;
+  ui.h3StatusText.textContent = copy.text;
+  ui.h3EndpointValue.textContent = status.connection?.endpoint || "未连接";
+  ui.h3DeviceValue.textContent = status.connection?.device || "等待服务";
+  ui.h3LocalConnectorStatus.textContent = status.ready
+    ? `本机 H3 已就绪：${status.connection?.endpoint}`
+    : H3_STATUS_COPY[status.state]?.label || "本机 H3 未就绪";
+  ui.h3LocalConnectorDot.parentElement.classList.toggle("is-ready", Boolean(status.ready));
+  for (const item of ui.h3CheckList.querySelectorAll("[data-check]")) {
+    item.classList.toggle("is-ready", Boolean(status.modelChecks?.[item.dataset.check]));
+  }
+  const canOpen = Boolean(status.connection?.endpoint || status.comfyRoot);
+  ui.openH3Button.disabled = !canOpen;
+  ui.openH3ButtonLabel.textContent = status.connection?.endpoint
+    ? "打开 H3 工作台"
+    : status.comfyRoot
+      ? "打开 ComfyUI 工作区"
+      : "需要先配置 ComfyUI";
+}
+
+async function refreshH3Status() {
+  ui.refreshH3Button.disabled = true;
+  ui.h3LiveBadge.dataset.state = "checking";
+  ui.h3StatusLabel.textContent = "检测中";
+  ui.h3StatusText.textContent = "正在检测 ComfyUI 和 H3 模型…";
+  try {
+    renderH3Status(await window.replication.getMinimaxH3Status());
+  } catch (error) {
+    renderH3Status({ state: "not_installed", modelChecks: {} });
+    showError(error);
+  } finally {
+    ui.refreshH3Button.disabled = false;
+  }
+}
+
+async function showH3View() {
+  setRailView("minimax-h3");
+  ui.replicationHeader.classList.add("hidden");
+  ui.replicationContent.classList.add("hidden");
+  ui.resultsSection.classList.add("hidden");
+  ui.historyView.classList.add("hidden");
+  ui.minimaxH3View.classList.remove("hidden");
+  renderH3References();
+  setH3Connector(state.h3ConnectorMode);
+  await Promise.all([refreshH3Status(), loadH3Connections()]);
+}
+
+async function openH3Workspace() {
+  ui.openH3Button.disabled = true;
+  try {
+    await window.replication.openMinimaxH3();
+  } catch (error) {
+    showError(error);
+  } finally {
+    ui.openH3Button.disabled = !Boolean(state.h3Status?.connection?.endpoint || state.h3Status?.comfyRoot);
+  }
+}
+
+function historyArtifactCount(run) {
+  const variantArtifacts = (run.variants || []).filter((variant) => variant.artifact?.path).length;
+  return Math.max(variantArtifacts, Array.isArray(run.artifacts) ? run.artifacts.length : 0);
+}
+
+function renderHistory(runs) {
+  state.historyRuns = runs;
+  const succeeded = runs.filter((run) => run.state === "succeeded").length;
+  const active = runs.filter((run) => ["queued", "running"].includes(run.state)).length;
+  const failed = runs.filter((run) => ["failed", "cancelled"].includes(run.state)).length;
+  const summary = [`${runs.length} 条真实运行`];
+  if (succeeded) summary.push(`${succeeded} 条完成`);
+  if (active) summary.push(`${active} 条进行中`);
+  if (failed) summary.push(`${failed} 条失败/取消`);
+  ui.historySummary.textContent = summary.join(" · ");
+  ui.historyList.replaceChildren();
+
+  if (runs.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    const copy = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = "还没有真实运行记录";
+    const hint = document.createElement("span");
+    hint.textContent = "完成源视频预检并准备 3 份本地合同后，任务才会保存在这里；这里不会显示假的示例数据。";
+    copy.append(title, hint);
+    empty.append(copy);
+    ui.historyList.append(empty);
+    return;
+  }
+
+  for (const run of runs) {
+    const card = document.createElement("article");
+    card.className = "history-card";
+    card.dataset.historyRunId = run.id;
+
+    const mark = document.createElement("span");
+    mark.className = "history-run-mark";
+    mark.dataset.state = run.state;
+    mark.textContent = HISTORY_MARKS[run.state] || "RUN";
+
+    const copy = document.createElement("div");
+    copy.className = "history-run-copy";
+    const titleRow = document.createElement("div");
+    titleRow.className = "history-run-title";
+    const title = document.createElement("h3");
+    title.textContent = run.input?.name || run.id;
+    titleRow.append(title);
+
+    const metadata = run.input?.metadata || {};
+    const meta = document.createElement("p");
+    meta.className = "history-run-meta";
+    const dimensions = metadata.width && metadata.height ? `${metadata.width} × ${metadata.height}` : "画幅未知";
+    meta.textContent = `${formatDateTime(run.createdAt)} · ${formatDuration(Number(metadata.duration))} · ${dimensions} · ${historyArtifactCount(run)} 个已登记产物`;
+
+    const assets = document.createElement("p");
+    assets.className = "history-run-assets";
+    assets.textContent = `人物：${run.persona?.name || "未记录"} · 音色：${run.voice?.name || "未记录"}`;
+
+    const variants = document.createElement("div");
+    variants.className = "history-variant-states";
+    for (const variant of run.variants || []) {
+      const variantState = document.createElement("span");
+      variantState.className = "history-variant-state";
+      variantState.dataset.state = variant.state;
+      variantState.textContent = `${String(variant.index || "").padStart(2, "0")} ${STATUS_LABELS[variant.state] || variant.state}`;
+      variants.append(variantState);
+    }
+    copy.append(titleRow, meta, assets, variants);
+
+    const actions = document.createElement("div");
+    actions.className = "history-card-actions";
+    const status = document.createElement("span");
+    status.className = "variant-state";
+    status.textContent = STATUS_LABELS[run.state] || run.state;
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "history-open-button";
+    openButton.textContent = "查看记录";
+    openButton.addEventListener("click", () => openHistoryRun(run.id));
+    actions.append(status, openButton);
+
+    card.append(mark, copy, actions);
+    ui.historyList.append(card);
+  }
+}
+
+async function refreshHistory() {
+  ui.refreshHistoryButton.disabled = true;
+  ui.historySummary.textContent = "正在读取本机记录…";
+  try {
+    const runs = await window.replication.listRuns();
+    renderHistory(runs);
+  } catch (error) {
+    ui.historySummary.textContent = "历史记录读取失败";
+    showError(error);
+  } finally {
+    ui.refreshHistoryButton.disabled = false;
+  }
+}
+
+async function openHistoryRun(runId) {
+  try {
+    const run = await window.replication.getRun(runId);
+    stopPolling();
+    setPersonAsset(null);
+    setVoiceAsset(null);
+    state.inspection = null;
+    state.run = null;
+    showReplicationView();
+    renderRun(run);
+    showReplicationView({ focusResults: true });
+    if (["queued", "running"].includes(run.state)) startPolling();
+  } catch (error) {
+    showError(error);
   }
 }
 
@@ -677,6 +1095,20 @@ function resetForNewVideo() {
 }
 
 function bindEvents() {
+  ui.replicationNav.addEventListener("click", () => showReplicationView());
+  ui.historyNav.addEventListener("click", showHistoryView);
+  ui.h3Nav.addEventListener("click", showH3View);
+  ui.refreshH3Button.addEventListener("click", refreshH3Status);
+  ui.openH3Button.addEventListener("click", openH3Workspace);
+  ui.editH3InputsButton.addEventListener("click", () => showReplicationView());
+  for (const connectorTab of document.querySelectorAll("[data-h3-connector]")) {
+    connectorTab.addEventListener("click", () => setH3Connector(connectorTab.dataset.h3Connector));
+  }
+  ui.saveH3ApiButton.addEventListener("click", saveAndTestH3Api);
+  ui.saveH3SshButton.addEventListener("click", saveAndTestH3Ssh);
+  ui.chooseH3IdentityButton.addEventListener("click", chooseH3Identity);
+  ui.detectH3LocalButton.addEventListener("click", refreshH3Status);
+  ui.refreshHistoryButton.addEventListener("click", refreshHistory);
   ui.chooseVideoButton.addEventListener("click", (event) => {
     event.stopPropagation();
     chooseVideo();
@@ -740,8 +1172,13 @@ async function bootstrap() {
       window.replication.bootstrap(),
       window.replication.listRuns()
     ]);
+    state.historyRuns = runs;
     if (config.demoPersonImagePath) setPersonAsset(config.demoPersonImagePath);
     if (config.demoAudioReferencePath) setVoiceAsset(config.demoAudioReferencePath);
+    if (config.initialView === "minimax-h3") {
+      await showH3View();
+      return;
+    }
     if (config.demoVideoPath) {
       await loadVideo(config.demoVideoPath);
       return;
