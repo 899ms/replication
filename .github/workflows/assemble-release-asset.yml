@@ -1,0 +1,85 @@
+name: Assemble release asset
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Draft GitHub release id
+        required: true
+        type: string
+      tag_name:
+        description: Release tag
+        required: true
+        type: string
+      part_prefix:
+        description: Prefix shared by all temporary part assets
+        required: true
+        type: string
+      output_name:
+        description: Final release asset filename
+        required: true
+        type: string
+      expected_sha256:
+        description: Expected SHA-256 of the assembled asset
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: assemble-release-${{ inputs.release_id }}
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      TAG_NAME: ${{ inputs.tag_name }}
+      PART_PREFIX: ${{ inputs.part_prefix }}
+      OUTPUT_NAME: ${{ inputs.output_name }}
+      EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+    steps:
+      - name: Download and assemble verified release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p parts
+
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+            --jq '.assets[] | [.id, .name] | @tsv' \
+            | awk -F '\t' -v prefix="${PART_PREFIX}" 'index($2, prefix) == 1' \
+            | LC_ALL=C sort -t $'\t' -k2,2 > parts.tsv
+
+          part_count=$(wc -l < parts.tsv | tr -d ' ')
+          if [ "${part_count}" -lt 2 ]; then
+            echo "Expected at least two release parts, found ${part_count}." >&2
+            exit 1
+          fi
+
+          while IFS=$'\t' read -r asset_id asset_name; do
+            gh api \
+              -H 'Accept: application/octet-stream' \
+              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+              > "parts/${asset_name}"
+          done < parts.tsv
+
+          find parts -type f -name "${PART_PREFIX}*" -print0 \
+            | LC_ALL=C sort -z \
+            | xargs -0 cat > "${OUTPUT_NAME}"
+
+          printf '%s  %s\n' "${EXPECTED_SHA256}" "${OUTPUT_NAME}" | sha256sum -c -
+          gh release upload "${TAG_NAME}" "${OUTPUT_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
+
+          while IFS=$'\t' read -r asset_id asset_name; do
+            gh api -X DELETE \
+              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
+          done < parts.tsv
+
+          gh release edit "${TAG_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --draft=false
