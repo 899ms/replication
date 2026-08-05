@@ -1,6 +1,6 @@
 {
   "name": "replication",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "工作台复刻 2.0：视频复刻、运行记录与 MiniMax H3 多入口工作台。",
   "main": "src/main/index.js",
   "author": "abo",
@@ -18,8 +18,8 @@
     "prepare:win-runtime": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-windows-runtime.ps1",
     "verify:win-runtime": "node scripts/verify-windows-runtime.js vendor/replication-runtime",
     "sign:mac": "codesign --force --deep --sign - 'dist/工作台复刻 2.0-darwin-arm64/工作台复刻 2.0.app'",
-    "build:mac": "npm run guard && npm run icon:build && electron-packager . '工作台复刻 2.0' --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --download.cacheRoot=/private/tmp/replication-electron-cache --app-bundle-id=com.abo.replication --app-category-type=public.app-category.video --app-version=2.0.0 --icon=assets/Replication.icns --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && npm run sign:mac",
-    "build:win": "npm run guard && npm run verify:win-runtime && npm run icon:build && electron-packager . Replication --platform=win32 --arch=x64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --app-version=2.0.0 --icon=assets/Replication.ico --extra-resource=vendor/replication-runtime --extra-resource=scripts/configure-runtime.py --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && node scripts/finalize-windows-package.js"
+    "build:mac": "npm run guard && npm run icon:build && electron-packager . '工作台复刻 2.0' --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --download.cacheRoot=/private/tmp/replication-electron-cache --app-bundle-id=com.abo.replication --app-category-type=public.app-category.video --app-version=2.0.1 --icon=assets/Replication.icns --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && npm run sign:mac",
+    "build:win": "npm run guard && npm run verify:win-runtime && npm run icon:build && electron-packager . Replication --platform=win32 --arch=x64 --out=dist --overwrite --prune=true --asar.unpackDir=runtime --app-version=2.0.1 --icon=assets/Replication.ico --extra-resource=vendor/replication-runtime --extra-resource=scripts/configure-runtime.py --ignore=\"^/(\\.venv|\\.github|dist|tests|scripts|vendor|windows|assets/Replication\\.iconset)\" && node scripts/finalize-windows-package.js"
   },
   "devDependencies": {
     "@electron/packager": "20.0.4",

@@ -1,0 +1,55 @@
+{
+  "action_id": "minimax.h3.models.download.v1",
+  "title": "Download official MiniMax H3 ComfyUI model files",
+  "version": 1,
+  "source": {
+    "type": "official_model_repository",
+    "canonical_name": "Comfy-Org/MiniMax-H3",
+    "repository": "https://huggingface.co/Comfy-Org/MiniMax-H3"
+  },
+  "execution": {
+    "adapter": "electron-shell-external-download",
+    "module": "src/main/minimax-h3-models.js",
+    "ipc": "replication:open-minimax-h3-model-downloads"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["modelIds"],
+    "properties": {
+      "modelIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 4,
+        "items": {
+          "enum": ["diffusion", "textEncoder", "videoVae", "audioVae"]
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["opened", "count"]
+  },
+  "effects": {
+    "class": "external_browser_download",
+    "paid": false,
+    "external_write": false,
+    "publication": false
+  },
+  "controls": {
+    "progress": false,
+    "cancel": false,
+    "retry": true,
+    "resume": "managed_by_browser"
+  },
+  "validation": {
+    "type": "trusted_download_allowlist",
+    "rules": [
+      "known_model_id",
+      "https_only",
+      "host_huggingface_co",
+      "repository_Comfy-Org_MiniMax-H3",
+      "renderer_never_supplies_url"
+    ]
+  }
+}

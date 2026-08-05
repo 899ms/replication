@@ -4,6 +4,11 @@ const { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } = require("ele
 
 const { listLocalAssets } = require("./local-assets");
 const { MinimaxH3ConnectionManager } = require("./minimax-h3-connections");
+const {
+  MODEL_REPOSITORY_URL,
+  listMinimaxH3Models,
+  openModelDownloads
+} = require("./minimax-h3-models");
 const { getMinimaxH3Status } = require("./minimax-h3-runtime");
 const { RunManager } = require("./run-manager");
 
@@ -84,13 +89,21 @@ function createWindow() {
             "!document.querySelector('#historyView').classList.contains('hidden') && !document.querySelector('#historySummary').textContent.includes('正在读取')"
           );
         }
-        if (["minimax-h3", "minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
+        if (["minimax-h3", "minimax-h3-models", "minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
           await mainWindow.webContents.executeJavaScript(
             "document.querySelector('[data-rail-view=\"minimax-h3\"]').click(); true"
           );
           await waitForRendererCondition(
             "!document.querySelector('#minimaxH3View').classList.contains('hidden') && document.querySelector('#h3LiveBadge').dataset.state !== 'checking'"
           );
+          if (process.env.REPLICATION_CAPTURE_ACTION === "minimax-h3-models") {
+            await waitForRendererCondition(
+              "document.querySelectorAll('#h3ModelList .h3-model-item').length === 4"
+            );
+            await mainWindow.webContents.executeJavaScript(
+              "document.querySelector('.workspace').scrollTo({ top: document.querySelector('.h3-model-download-card').offsetTop - 38, behavior: 'instant' }); true"
+            );
+          }
           if (["minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
             if (process.env.REPLICATION_CAPTURE_ACTION === "minimax-h3-ssh") {
               await mainWindow.webContents.executeJavaScript(
@@ -192,6 +205,22 @@ function registerIpc() {
   ipcMain.handle("replication:get-run", (_event, runId) => runManager.getRun(runId));
   ipcMain.handle("replication:list-runs", () => runManager.listRuns());
   ipcMain.handle("replication:minimax-h3-status", () => getMinimaxH3Status());
+  ipcMain.handle("replication:minimax-h3-models", async () => {
+    const status = await getMinimaxH3Status();
+    const models = listMinimaxH3Models(status.modelChecks);
+    return {
+      repositoryUrl: MODEL_REPOSITORY_URL,
+      totalSizeBytes: models.reduce((total, model) => total + model.sizeBytes, 0),
+      models
+    };
+  });
+  ipcMain.handle("replication:open-minimax-h3-model-repository", async () => {
+    await shell.openExternal(MODEL_REPOSITORY_URL);
+    return { opened: MODEL_REPOSITORY_URL };
+  });
+  ipcMain.handle("replication:open-minimax-h3-model-downloads", (_event, input = {}) =>
+    openModelDownloads(input.modelIds, (url) => shell.openExternal(url))
+  );
   ipcMain.handle("replication:minimax-h3-connections", () =>
     h3ConnectionManager.publicConfig()
   );

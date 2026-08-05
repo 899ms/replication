@@ -1259,6 +1259,7 @@ button {
 
 .h3-hero-card,
 .h3-runtime-card,
+.h3-model-download-card,
 .h3-input-card,
 .h3-connection-card {
   border: 1px solid var(--line);
@@ -1499,6 +1500,148 @@ button {
   width: 100%;
   margin-top: auto;
   justify-content: center;
+}
+
+.h3-model-download-card {
+  grid-column: 1 / -1;
+  padding: 26px 28px 22px;
+}
+
+.h3-model-download-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.h3-model-download-heading h2 {
+  margin: 7px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.h3-model-download-heading p:not(.eyebrow) {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.h3-model-repository-address {
+  display: block;
+  margin-top: 7px;
+  color: #64718a;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 8px;
+}
+
+.h3-model-download-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.h3-model-download-actions .primary-button {
+  min-height: 40px;
+  padding-inline: 16px;
+  box-shadow: none;
+  font-size: 9px;
+}
+
+.h3-model-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.h3-model-item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fbfcff;
+}
+
+.h3-model-item.is-installed {
+  border-color: rgba(36, 122, 90, 0.2);
+  background: #f4faf7;
+}
+
+.h3-model-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #e8edff;
+  color: #536ba8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.h3-model-item.is-installed .h3-model-mark {
+  background: #dff2e9;
+  color: var(--green);
+}
+
+.h3-model-copy {
+  min-width: 0;
+}
+
+.h3-model-copy strong,
+.h3-model-copy span,
+.h3-model-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.h3-model-copy strong {
+  font-size: 10px;
+}
+
+.h3-model-copy span {
+  margin-top: 4px;
+  color: #59667a;
+  font-size: 8px;
+}
+
+.h3-model-copy small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.h3-model-download-button,
+.h3-model-installed-button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(125, 162, 255, 0.36);
+  border-radius: 9px;
+  background: #eef3ff;
+  cursor: pointer;
+  color: #49639f;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.h3-model-installed-button {
+  border-color: rgba(36, 122, 90, 0.16);
+  background: #e8f5ee;
+  cursor: default;
+  color: var(--green);
+}
+
+.h3-model-download-note {
+  margin: 13px 0 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
 }
 
 .h3-input-card {
@@ -2271,5 +2414,9 @@ button {
 
   .workspace {
     padding-inline: 28px;
+  }
+
+  .h3-model-list {
+    grid-template-columns: 1fr;
   }
 }

@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld("replication", {
   getRun: (runId) => ipcRenderer.invoke("replication:get-run", runId),
   listRuns: () => ipcRenderer.invoke("replication:list-runs"),
   getMinimaxH3Status: () => ipcRenderer.invoke("replication:minimax-h3-status"),
+  getMinimaxH3Models: () => ipcRenderer.invoke("replication:minimax-h3-models"),
+  openMinimaxH3ModelRepository: () => ipcRenderer.invoke("replication:open-minimax-h3-model-repository"),
+  openMinimaxH3ModelDownloads: (modelIds) =>
+    ipcRenderer.invoke("replication:open-minimax-h3-model-downloads", { modelIds }),
   getMinimaxH3Connections: () => ipcRenderer.invoke("replication:minimax-h3-connections"),
   saveMinimaxH3Api: (input) => ipcRenderer.invoke("replication:save-minimax-h3-api", input),
   testMinimaxH3Api: () => ipcRenderer.invoke("replication:test-minimax-h3-api"),

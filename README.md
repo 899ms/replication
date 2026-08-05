@@ -13,6 +13,7 @@
 - 本机 ComfyUI：真实检测 6006/8188 服务以及 H3 生成模型、文本编码器、视频 VAE 和音频 VAE。
 - SSH 服务器：保存主机、端口、用户名、远程工作目录和本机私钥路径，使用 `BatchMode` 做无密码连通测试。
 - H3 API：输入 API Base URL、模型名称和 API Key；API Key 通过 Electron `safeStorage` 加密，不写入仓库、日志或前端配置。
+- 官方模型下载：列出 Comfy-Org/MiniMax-H3 的 R2V 生成模型、文本编码器及视音频 VAE，可逐项或一键在默认浏览器开始下载，并显示目标 ComfyUI 目录与本机安装状态。
 
 可通过 `REPLICATION_MINIMAX_H3_URL` 和 `REPLICATION_MINIMAX_H3_COMFY_ROOT` 覆盖默认本机连接与工作区路径，也可通过 `MINIMAX_H3_API_KEY` 从环境变量提供 API 凭据。真实付费任务在提交前仍需要当次明确授权。
 
@@ -45,7 +46,7 @@ MeowLoad 仍是可选组件：只有“粘贴视频链接导入”需要；直�
 
 ## macOS / 源码运行
 
-Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `工作台复刻-2.0.0-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
+Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `工作台复刻-2.0.1-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
 
 要求：
 

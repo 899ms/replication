@@ -27,6 +27,8 @@ const ui = {
   h3LiveBadge: document.querySelector("#h3LiveBadge"),
   h3LocalConnectorStatus: document.querySelector("#h3LocalConnectorStatus"),
   h3LocalConnectorDot: document.querySelector("#h3LocalConnectorDot"),
+  h3ModelList: document.querySelector("#h3ModelList"),
+  h3ModelSummary: document.querySelector("#h3ModelSummary"),
   h3Nav: document.querySelector('[data-rail-view="minimax-h3"]'),
   h3PersonName: document.querySelector("#h3PersonName"),
   h3StatusLabel: document.querySelector("#h3StatusLabel"),
@@ -48,6 +50,7 @@ const ui = {
   openLinkButton: document.querySelector("#openLinkButton"),
   openH3Button: document.querySelector("#openH3Button"),
   openH3ButtonLabel: document.querySelector("#openH3ButtonLabel"),
+  openH3ModelRepositoryButton: document.querySelector("#openH3ModelRepositoryButton"),
   personName: document.querySelector("#personName"),
   personCandidateList: document.querySelector("#personCandidateList"),
   personPreview: document.querySelector("#personPreview"),
@@ -66,6 +69,7 @@ const ui = {
   resultsSection: document.querySelector("#resultsSection"),
   saveH3ApiButton: document.querySelector("#saveH3ApiButton"),
   saveH3SshButton: document.querySelector("#saveH3SshButton"),
+  downloadH3ModelsButton: document.querySelector("#downloadH3ModelsButton"),
   sourceCard: document.querySelector("#sourceCard"),
   sourceCodec: document.querySelector("#sourceCodec"),
   sourceDuration: document.querySelector("#sourceDuration"),
@@ -88,6 +92,7 @@ const state = {
   historyRuns: [],
   h3Connections: null,
   h3ConnectorMode: "api",
+  h3Models: [],
   h3Status: null,
   localAssets: null,
   personImagePath: null,
@@ -303,6 +308,86 @@ function renderH3Connections(config) {
     : "尚未配置 SSH 服务器。";
 }
 
+function renderH3Models(catalog) {
+  state.h3Models = Array.isArray(catalog.models) ? catalog.models : [];
+  const installedCount = state.h3Models.filter((model) => model.installed).length;
+  const missingModels = state.h3Models.filter((model) => !model.installed);
+  ui.h3ModelSummary.textContent = missingModels.length === 0
+    ? `4/4 已安装 · 官方 R2V 组合 ${formatBytes(catalog.totalSizeBytes)}`
+    : `${installedCount}/4 已安装 · 缺失 ${missingModels.length} 项 · 全套 ${formatBytes(catalog.totalSizeBytes)}`;
+  ui.downloadH3ModelsButton.disabled = missingModels.length === 0;
+  ui.downloadH3ModelsButton.textContent = missingModels.length === 0
+    ? "模型已齐全"
+    : `一键下载缺失模型（${missingModels.length}）`;
+  ui.h3ModelList.replaceChildren();
+
+  for (const model of state.h3Models) {
+    const item = document.createElement("article");
+    item.className = "h3-model-item";
+    item.classList.toggle("is-installed", model.installed);
+
+    const mark = document.createElement("span");
+    mark.className = "h3-model-mark";
+    mark.textContent = model.installed ? "✓" : "↓";
+
+    const copy = document.createElement("div");
+    copy.className = "h3-model-copy";
+    const title = document.createElement("strong");
+    title.textContent = model.title;
+    const file = document.createElement("span");
+    file.textContent = model.fileName;
+    const path = document.createElement("small");
+    path.textContent = `${formatBytes(model.sizeBytes)} · ${model.targetDirectory}`;
+    copy.append(title, file, path);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = model.installed ? "h3-model-installed-button" : "h3-model-download-button";
+    button.dataset.h3ModelDownload = model.id;
+    button.disabled = model.installed;
+    button.textContent = model.installed ? "已安装" : "一键下载";
+    item.append(mark, copy, button);
+    ui.h3ModelList.append(item);
+  }
+}
+
+async function loadH3Models() {
+  try {
+    renderH3Models(await window.replication.getMinimaxH3Models());
+  } catch (error) {
+    ui.h3ModelSummary.textContent = "官方模型目录读取失败。";
+    showError(error);
+  }
+}
+
+async function downloadH3Models(modelIds) {
+  const ids = [...new Set(modelIds)].filter(Boolean);
+  if (ids.length === 0) return;
+  const buttons = [...ui.h3ModelList.querySelectorAll("[data-h3-model-download]")];
+  ui.downloadH3ModelsButton.disabled = true;
+  for (const button of buttons) button.disabled = true;
+  try {
+    const result = await window.replication.openMinimaxH3ModelDownloads(ids);
+    ui.h3ModelSummary.textContent = `已在默认浏览器打开 ${result.count} 个官方下载；完成后放入标注目录。`;
+  } catch (error) {
+    showError(error);
+  } finally {
+    for (const button of buttons) {
+      const model = state.h3Models.find((item) => item.id === button.dataset.h3ModelDownload);
+      button.disabled = Boolean(model?.installed);
+    }
+    ui.downloadH3ModelsButton.disabled = state.h3Models.every((model) => model.installed);
+  }
+}
+
+async function openH3ModelRepository() {
+  try {
+    await window.replication.openMinimaxH3ModelRepository();
+  } catch (error) {
+    showError(error);
+  }
+}
+
 async function loadH3Connections() {
   try {
     renderH3Connections(await window.replication.getMinimaxH3Connections());
@@ -405,6 +490,7 @@ async function refreshH3Status() {
   ui.h3StatusText.textContent = "正在检测 ComfyUI 和 H3 模型…";
   try {
     renderH3Status(await window.replication.getMinimaxH3Status());
+    await loadH3Models();
   } catch (error) {
     renderH3Status({ state: "not_installed", modelChecks: {} });
     showError(error);
@@ -1100,6 +1186,14 @@ function bindEvents() {
   ui.h3Nav.addEventListener("click", showH3View);
   ui.refreshH3Button.addEventListener("click", refreshH3Status);
   ui.openH3Button.addEventListener("click", openH3Workspace);
+  ui.openH3ModelRepositoryButton.addEventListener("click", openH3ModelRepository);
+  ui.downloadH3ModelsButton.addEventListener("click", () => {
+    downloadH3Models(state.h3Models.filter((model) => !model.installed).map((model) => model.id));
+  });
+  ui.h3ModelList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-h3-model-download]");
+    if (button && !button.disabled) downloadH3Models([button.dataset.h3ModelDownload]);
+  });
   ui.editH3InputsButton.addEventListener("click", () => showReplicationView());
   for (const connectorTab of document.querySelectorAll("[data-h3-connector]")) {
     connectorTab.addEventListener("click", () => setH3Connector(connectorTab.dataset.h3Connector));
