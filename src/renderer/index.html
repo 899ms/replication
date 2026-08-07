@@ -50,10 +50,10 @@
             </span>
           </button>
           <button class="rail-nav-item rail-nav-item-h3" data-rail-view="minimax-h3" type="button">
-            <span class="rail-nav-icon rail-nav-icon-h3" aria-hidden="true">H3</span>
+            <span class="rail-nav-icon rail-nav-icon-h3" aria-hidden="true">API</span>
             <span class="rail-nav-copy">
-              <strong>MiniMax H3</strong>
-              <small>本机多模态视频工作台</small>
+              <strong>视频接口</strong>
+              <small>输入 API · 模型 · 自有密钥</small>
             </span>
           </button>
         </nav>
@@ -300,10 +300,10 @@
         <section class="h3-view hidden" id="minimaxH3View" aria-labelledby="minimaxH3Title">
           <header class="topbar h3-topbar">
             <div>
-              <p class="eyebrow">LOCAL OMNI VIDEO</p>
-              <h1 id="minimaxH3Title">MiniMax H3</h1>
+              <p class="eyebrow">VIDEO INTERFACES</p>
+              <h1 id="minimaxH3Title">视频接口</h1>
               <p class="subtitle">
-                复用当前视频、人物和音色参考，连接本机 ComfyUI 的 H3 Reference-to-Video 工作流。
+                输入你自己的视频 API、模型和密钥。Replication 不绑定单一平台，兼容接口可直接接入。
               </p>
             </div>
             <div class="h3-live-badge" id="h3LiveBadge" data-state="checking">
@@ -313,29 +313,74 @@
           </header>
 
           <div class="h3-dashboard">
+            <article class="video-api-card">
+              <div class="video-api-card-heading">
+                <div>
+                  <p class="eyebrow">PRIMARY GENERATION INTERFACE</p>
+                  <h2>输入视频 API</h2>
+                  <p>用于“视频复刻”的 3 个生成任务。当前支持 Replication / Seedance 兼容任务协议，其他协议可通过 Adapter 扩展。</p>
+                </div>
+                <span class="secure-storage-chip">密钥系统加密</span>
+              </div>
+              <div class="h3-form-grid video-api-form-grid">
+                <label class="h3-form-field">
+                  <span>接口名称</span>
+                  <input id="videoApiProviderName" type="text" placeholder="例如：我的视频云" spellcheck="false" />
+                </label>
+                <label class="h3-form-field">
+                  <span>视频模型</span>
+                  <input id="videoApiModel" type="text" placeholder="例如：your-video-model" spellcheck="false" />
+                </label>
+                <label class="h3-form-field h3-form-field-wide">
+                  <span>视频 API Base URL</span>
+                  <input id="videoApiEndpoint" type="url" placeholder="https://your-provider.example.com/v1" spellcheck="false" />
+                </label>
+                <label class="h3-form-field h3-form-field-wide">
+                  <span>素材上传 Base URL</span>
+                  <input id="videoApiUploadEndpoint" type="url" placeholder="留空则与视频 API 地址相同" spellcheck="false" />
+                </label>
+                <label class="h3-form-field">
+                  <span>任务路径</span>
+                  <input id="videoApiTaskPath" type="text" value="/contents/generations/tasks" spellcheck="false" />
+                </label>
+                <label class="h3-form-field">
+                  <span>API Key</span>
+                  <input id="videoApiKey" type="password" placeholder="输入你自己的 API Key" autocomplete="new-password" spellcheck="false" />
+                </label>
+                <label class="h3-form-field h3-form-field-wide">
+                  <span>上传 Token（可选）</span>
+                  <input id="videoApiUploadToken" type="password" placeholder="留空则复用 API Key" autocomplete="new-password" spellcheck="false" />
+                </label>
+              </div>
+              <div class="h3-port-actions video-api-actions">
+                <p id="videoApiStatus">尚未配置视频接口。</p>
+                <button class="primary-button h3-save-button" id="saveVideoApiButton" type="button">保存并检测</button>
+              </div>
+            </article>
+
             <article class="h3-hero-card">
               <div class="h3-orbit h3-orbit-one" aria-hidden="true"></div>
               <div class="h3-orbit h3-orbit-two" aria-hidden="true"></div>
               <div class="h3-hero-copy">
-                <span class="h3-model-tag">OPEN WEIGHTS · REF2VA</span>
-                <h2>Video + Image + Audio<br />一次给齐。</h2>
+                <span class="h3-model-tag">OPTIONAL LOCAL ADAPTER · MINIMAX H3</span>
+                <h2>接口可换，<br />工作流不变。</h2>
                 <p>
-                  H3 原生生成画面与立体声音，支持角色、运镜、动作和音色参考。
+                  默认工作流只依赖统一的视频接口；MiniMax H3、本机 ComfyUI 或兼容云服务都可以作为后端。
                 </p>
               </div>
               <div class="h3-capability-row" aria-label="H3 生成模式">
-                <span>T2V</span>
-                <span>I2V</span>
-                <span class="is-primary">R2V</span>
-                <span>STEREO AUDIO</span>
+                <span>VIDEO API</span>
+                <span>LOCAL</span>
+                <span class="is-primary">ADAPTER</span>
+                <span>EXTENSIBLE</span>
               </div>
             </article>
 
             <article class="h3-runtime-card">
               <div class="h3-runtime-heading">
                 <div>
-                  <p class="eyebrow">RUNTIME LINK</p>
-                  <h2>本机 H3 运行时</h2>
+                  <p class="eyebrow">OPTIONAL LOCAL RUNTIME</p>
+                  <h2>MiniMax H3 本机接口</h2>
                 </div>
                 <button class="icon-refresh-button" id="refreshH3Button" type="button" aria-label="重新检测 H3">↻</button>
               </div>
@@ -412,8 +457,8 @@
               <div class="h3-connection-main">
                 <div class="h3-input-heading">
                   <div>
-                    <p class="eyebrow">CONNECTION PORTS</p>
-                    <h2>接入 MiniMax H3 工作台</h2>
+                    <p class="eyebrow">MINIMAX H3 EXTENSION</p>
+                    <h2>可选 H3 扩展接口</h2>
                   </div>
                   <span class="secure-storage-chip">凭据安全存储</span>
                 </div>
@@ -541,23 +586,23 @@
           ×
         </button>
         <p class="eyebrow">PAID AUTHORIZATION</p>
-        <h2 id="authTitle">确认提交 3 个 Seedance 任务</h2>
+        <h2 id="authTitle">确认提交 3 个视频生成任务</h2>
         <p class="modal-lead">
-          内置运行组件、替换人物和音色参考已经写入 3 份合同。下一步会真实上传素材并产生供应商费用。
+          当前视频接口、替换人物和音色参考已经写入 3 份合同。下一步会真实上传素材并产生供应商费用。
         </p>
 
         <dl class="authorization-facts">
           <div>
-            <dt>平台</dt>
-            <dd>Kuaizi / Seedance 2.0</dd>
+            <dt>视频接口</dt>
+            <dd id="authorizationProvider">由当前配置决定</dd>
           </div>
           <div>
             <dt>数量</dt>
             <dd>固定 3 个视频任务</dd>
           </div>
           <div>
-            <dt>输出</dt>
-            <dd>480p · 9:16 · 带声音 MP4</dd>
+            <dt>模型</dt>
+            <dd id="authorizationModel">由当前配置决定</dd>
           </div>
           <div>
             <dt>费用</dt>

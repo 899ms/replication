@@ -33,15 +33,30 @@ test("MiniMax H3 is an actionable workbench module backed by runtime IPC", () =>
   assert.match(main, /openModelDownloads/);
 });
 
+test("the left rail exposes a provider-neutral video interface used by generation", () => {
+  assert.match(html, /<strong>视频接口<\/strong>/);
+  assert.match(html, /<h2>输入视频 API<\/h2>/);
+  assert.match(html, /id="videoApiProviderName"/);
+  assert.match(html, /id="videoApiEndpoint"/);
+  assert.match(html, /id="videoApiUploadEndpoint"/);
+  assert.match(html, /id="videoApiModel"/);
+  assert.match(html, /id="videoApiKey"/);
+  assert.match(html, /id="authorizationProvider"/);
+  assert.doesNotMatch(html, /<dd>Kuaizi \/ Seedance 2\.0<\/dd>/);
+  assert.match(renderer, /window\.replication\.saveVideoInterface/);
+  assert.match(preload, /replication:save-video-interface/);
+  assert.match(main, /VideoInterfaceConnectionManager/);
+});
+
 test("desktop workbench opens at the enlarged dimensions", () => {
   assert.match(main, /width:\s*1500/);
   assert.match(main, /height:\s*940/);
   assert.match(main, /minWidth:\s*1180/);
 });
 
-test("2.0.1 product version keeps the 2.0 workbench branding", () => {
+test("2.0.2 product version keeps the 2.0 workbench branding", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
-  assert.equal(pkg.version, "2.0.1");
+  assert.equal(pkg.version, "2.0.2");
   assert.match(html, /<title>工作台复刻 2\.0<\/title>/);
   assert.match(html, /DESKTOP WORKBENCH · 2\.0/);
   assert.match(main, /title:\s*"工作台复刻 2\.0"/);

@@ -11,10 +11,12 @@ const {
 } = require("./minimax-h3-models");
 const { getMinimaxH3Status } = require("./minimax-h3-runtime");
 const { RunManager } = require("./run-manager");
+const { VideoInterfaceConnectionManager } = require("./video-interface-connections");
 
 let mainWindow;
 let h3ConnectionManager;
 let runManager;
+let videoInterfaceManager;
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -89,7 +91,7 @@ function createWindow() {
             "!document.querySelector('#historyView').classList.contains('hidden') && !document.querySelector('#historySummary').textContent.includes('正在读取')"
           );
         }
-        if (["minimax-h3", "minimax-h3-models", "minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
+        if (["video-interface", "minimax-h3", "minimax-h3-models", "minimax-h3-connections", "minimax-h3-ssh"].includes(process.env.REPLICATION_CAPTURE_ACTION)) {
           await mainWindow.webContents.executeJavaScript(
             "document.querySelector('[data-rail-view=\"minimax-h3\"]').click(); true"
           );
@@ -204,6 +206,15 @@ function registerIpc() {
   );
   ipcMain.handle("replication:get-run", (_event, runId) => runManager.getRun(runId));
   ipcMain.handle("replication:list-runs", () => runManager.listRuns());
+  ipcMain.handle("replication:video-interface", () =>
+    videoInterfaceManager.publicConfig()
+  );
+  ipcMain.handle("replication:save-video-interface", (_event, input) =>
+    videoInterfaceManager.save(input)
+  );
+  ipcMain.handle("replication:test-video-interface", () =>
+    videoInterfaceManager.testConnection()
+  );
   ipcMain.handle("replication:minimax-h3-status", () => getMinimaxH3Status());
   ipcMain.handle("replication:minimax-h3-models", async () => {
     const status = await getMinimaxH3Status();
@@ -282,9 +293,14 @@ app.whenReady().then(() => {
     app.setAppUserModelId("com.abo.replication");
   }
   const dataRoot = resolveDataRoot();
+  videoInterfaceManager = new VideoInterfaceConnectionManager({
+    dataRoot,
+    secretBox: safeStorage
+  });
   runManager = new RunManager({
     dataRoot,
-    assetRoot: path.join(projectRoot(), "assets")
+    assetRoot: path.join(projectRoot(), "assets"),
+    videoInterfaceManager
   });
   h3ConnectionManager = new MinimaxH3ConnectionManager({
     dataRoot,

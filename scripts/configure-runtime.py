@@ -32,15 +32,17 @@ def main() -> int:
         raise SystemExit(f"配置已存在，未覆盖：{target}")
 
     data = {
-        "username": prompt("Kuaizi 用户名"),
-        "password": prompt("Kuaizi 密码", secret=True),
-        "console_token": prompt("Kuaizi Console Token", secret=True),
-        "api_key": prompt("Kuaizi API Key", secret=True),
+        "provider_name": prompt("视频接口名称") or "自定义视频接口",
+        "api_base": prompt("视频 API Base URL"),
+        "upload_base": prompt("素材上传 Base URL（留空则同上）"),
+        "model": prompt("视频模型名称"),
+        "api_key": prompt("视频接口 API Key", secret=True),
+        "upload_token": prompt("上传 Token（留空则复用 API Key）", secret=True),
     }
-    has_login = bool(data["username"] and data["password"])
-    has_tokens = bool(data["console_token"] and data["api_key"])
-    if not has_login and not has_tokens:
-        raise SystemExit("至少填写用户名+密码，或 Console Token+API Key。")
+    data["upload_base"] = data["upload_base"] or data["api_base"]
+    data["upload_token"] = data["upload_token"] or data["api_key"]
+    if not data["api_base"] or not data["model"] or not data["api_key"]:
+        raise SystemExit("必须填写视频 API 地址、模型名称和 API Key。")
 
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -4,6 +4,8 @@ const ui = {
   assetDiscoveryHint: document.querySelector("#assetDiscoveryHint"),
   authorizationCheckbox: document.querySelector("#authorizationCheckbox"),
   authorizationModal: document.querySelector("#authorizationModal"),
+  authorizationModel: document.querySelector("#authorizationModel"),
+  authorizationProvider: document.querySelector("#authorizationProvider"),
   cancelAuthorizationButton: document.querySelector("#cancelAuthorizationButton"),
   changeVideoButton: document.querySelector("#changeVideoButton"),
   choosePersonButton: document.querySelector("#choosePersonButton"),
@@ -80,6 +82,15 @@ const ui = {
   toast: document.querySelector("#toast"),
   toastMessage: document.querySelector("#toastMessage"),
   historyNav: document.querySelector('[data-rail-view="history"]'),
+  saveVideoApiButton: document.querySelector("#saveVideoApiButton"),
+  videoApiEndpoint: document.querySelector("#videoApiEndpoint"),
+  videoApiKey: document.querySelector("#videoApiKey"),
+  videoApiModel: document.querySelector("#videoApiModel"),
+  videoApiProviderName: document.querySelector("#videoApiProviderName"),
+  videoApiStatus: document.querySelector("#videoApiStatus"),
+  videoApiTaskPath: document.querySelector("#videoApiTaskPath"),
+  videoApiUploadEndpoint: document.querySelector("#videoApiUploadEndpoint"),
+  videoApiUploadToken: document.querySelector("#videoApiUploadToken"),
   voiceCandidateList: document.querySelector("#voiceCandidateList"),
   voiceName: document.querySelector("#voiceName")
 };
@@ -99,7 +110,8 @@ const state = {
   pollTimer: null,
   run: null,
   scanningAssets: false,
-  selectedPath: null
+  selectedPath: null,
+  videoInterface: null
 };
 
 const VARIANT_LABELS = {
@@ -308,6 +320,66 @@ function renderH3Connections(config) {
     : "尚未配置 SSH 服务器。";
 }
 
+function renderVideoInterface(config) {
+  state.videoInterface = config;
+  ui.videoApiProviderName.value = config.providerName || "自定义视频接口";
+  ui.videoApiEndpoint.value = config.apiBase || "";
+  ui.videoApiUploadEndpoint.value = config.uploadBase || "";
+  ui.videoApiModel.value = config.model || "doubao-seedance-2-0-260128";
+  ui.videoApiTaskPath.value = config.taskPath || "/contents/generations/tasks";
+  ui.videoApiKey.value = "";
+  ui.videoApiUploadToken.value = "";
+  ui.videoApiKey.placeholder = config.hasApiKey
+    ? "API Key 已安全保存；留空则保持不变"
+    : "输入你自己的 API Key";
+  ui.videoApiUploadToken.placeholder = config.hasUploadToken
+    ? "上传 Token 已安全保存；留空则保持不变"
+    : "留空则复用 API Key";
+  ui.videoApiStatus.textContent = config.configured
+    ? `${config.providerName} 已配置 · ${config.model} · 密钥来自${config.credentialSource === "environment" ? "环境变量" : "系统加密存储"}。`
+    : "尚未配置视频接口；生成前请填写你自己的接口与密钥。";
+}
+
+async function loadVideoInterface() {
+  try {
+    renderVideoInterface(await window.replication.getVideoInterface());
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function saveAndTestVideoInterface() {
+  ui.saveVideoApiButton.disabled = true;
+  ui.saveVideoApiButton.textContent = "正在安全保存…";
+  let saved = false;
+  try {
+    await window.replication.saveVideoInterface({
+      providerName: ui.videoApiProviderName.value,
+      apiBase: ui.videoApiEndpoint.value,
+      uploadBase: ui.videoApiUploadEndpoint.value || ui.videoApiEndpoint.value,
+      model: ui.videoApiModel.value,
+      taskPath: ui.videoApiTaskPath.value,
+      apiKey: ui.videoApiKey.value,
+      uploadToken: ui.videoApiUploadToken.value
+    });
+    saved = true;
+    ui.videoApiKey.value = "";
+    ui.videoApiUploadToken.value = "";
+    ui.videoApiStatus.textContent = "接口已保存，正在做免费连通检测…";
+    const result = await window.replication.testVideoInterface();
+    await loadVideoInterface();
+    ui.videoApiStatus.textContent = result.message;
+  } catch (error) {
+    ui.videoApiStatus.textContent = saved
+      ? `接口已保存，但检测未通过：${error.message}`
+      : error.message;
+    showError(error);
+  } finally {
+    ui.saveVideoApiButton.disabled = false;
+    ui.saveVideoApiButton.textContent = "保存并检测";
+  }
+}
+
 function renderH3Models(catalog) {
   state.h3Models = Array.isArray(catalog.models) ? catalog.models : [];
   const installedCount = state.h3Models.filter((model) => model.installed).length;
@@ -508,7 +580,7 @@ async function showH3View() {
   ui.minimaxH3View.classList.remove("hidden");
   renderH3References();
   setH3Connector(state.h3ConnectorMode);
-  await Promise.all([refreshH3Status(), loadH3Connections()]);
+  await Promise.all([loadVideoInterface(), refreshH3Status(), loadH3Connections()]);
 }
 
 async function openH3Workspace() {
@@ -893,6 +965,8 @@ async function chooseVoice() {
 }
 
 function openAuthorization() {
+  ui.authorizationProvider.textContent = state.run?.authorization?.provider || "当前视频接口";
+  ui.authorizationModel.textContent = state.run?.authorization?.model || "当前配置模型";
   ui.authorizationCheckbox.checked = false;
   ui.confirmAuthorizationButton.disabled = true;
   ui.authorizationModal.classList.remove("hidden");
@@ -1045,7 +1119,7 @@ function renderRun(run) {
   if (run.state === "waiting_authorization") {
     setSteps("prepare");
     ui.actionTitle.textContent = "3 份任务合同已准备";
-    ui.actionHint.textContent = "需要确认当前 3 个付费 Seedance 任务，确认前不会上传或扣费。";
+    ui.actionHint.textContent = `需要确认当前 3 个付费视频任务；将使用 ${run.authorization?.provider || "当前接口"}，确认前不会上传或扣费。`;
     ui.primaryButton.disabled = false;
     ui.primaryButtonLabel.textContent = "确认费用并开始生成";
   } else if (run.state === "queued" || run.state === "running") {
@@ -1095,6 +1169,7 @@ async function prepareCurrentVideo() {
     showError(error);
     ui.actionTitle.textContent = "任务准备失败";
     ui.actionHint.textContent = error.message;
+    if (/视频接口/.test(error.message)) await showH3View();
   } finally {
     setBusy(false);
   }
@@ -1190,6 +1265,7 @@ function bindEvents() {
   ui.downloadH3ModelsButton.addEventListener("click", () => {
     downloadH3Models(state.h3Models.filter((model) => !model.installed).map((model) => model.id));
   });
+  ui.saveVideoApiButton.addEventListener("click", saveAndTestVideoInterface);
   ui.h3ModelList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-h3-model-download]");
     if (button && !button.disabled) downloadH3Models([button.dataset.h3ModelDownload]);

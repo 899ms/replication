@@ -1261,10 +1261,57 @@ button {
 .h3-runtime-card,
 .h3-model-download-card,
 .h3-input-card,
-.h3-connection-card {
+.h3-connection-card,
+.video-api-card {
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--surface);
+}
+
+.video-api-card {
+  grid-column: 1 / -1;
+  padding: 28px;
+  border-color: rgba(125, 162, 255, 0.34);
+  background:
+    radial-gradient(circle at 92% 12%, rgba(125, 162, 255, 0.14), transparent 24%),
+    var(--surface);
+  box-shadow: 0 18px 48px rgba(26, 45, 77, 0.08);
+}
+
+.video-api-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.video-api-card-heading h2 {
+  margin: 7px 0 0;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+}
+
+.video-api-card-heading p:not(.eyebrow) {
+  max-width: 720px;
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.video-api-form-grid {
+  margin-top: 22px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.video-api-form-grid .h3-form-field-wide {
+  grid-column: span 2;
+}
+
+.video-api-actions {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .h3-hero-card {

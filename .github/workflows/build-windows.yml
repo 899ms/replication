@@ -85,15 +85,15 @@ jobs:
             throw "The packaged app did not produce its launch screenshot."
           }
 
-          $archive = Join-Path $PWD "dist\Replication-0.3.0-windows-x64.zip"
+          $archive = Join-Path $PWD "dist\Replication-2.0.2-windows-x64.zip"
           Compress-Archive -Path (Join-Path $packageRoot "*") -DestinationPath $archive -CompressionLevel Optimal
 
       - name: Upload portable Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: Replication-0.3.0-windows-x64
+          name: Replication-2.0.2-windows-x64
           path: |
-            dist/Replication-0.3.0-windows-x64.zip
+            dist/Replication-2.0.2-windows-x64.zip
             ${{ runner.temp }}/replication-windows-smoke.png
           if-no-files-found: error
           retention-days: 30

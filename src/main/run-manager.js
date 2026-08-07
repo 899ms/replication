@@ -154,6 +154,7 @@ class RunManager extends EventEmitter {
     this.ffprobe = options.ffprobe || DEFAULT_FFPROBE;
     this.ffmpeg = options.ffmpeg || DEFAULT_FFMPEG;
     this.linkImporter = options.linkImporter || importVideoFromLink;
+    this.videoInterfaceManager = options.videoInterfaceManager || null;
     this.resumeScript = options.resumeScript || null;
     this.processes = new Map();
     this.outputBuffers = new Map();
@@ -165,11 +166,26 @@ class RunManager extends EventEmitter {
     return path.join(this.dataRoot, "runs");
   }
 
-  pythonEnvironment() {
+  providerConfig() {
+    if (!this.videoInterfaceManager) {
+      return {
+        configured: true,
+        providerName: process.env.VIDEO_INTERFACE_NAME || "外部视频接口",
+        model: process.env.VIDEO_API_MODEL || "doubao-seedance-2-0-260128"
+      };
+    }
+    return this.videoInterfaceManager.publicConfig();
+  }
+
+  pythonEnvironment({ requireProvider = false } = {}) {
+    const providerEnvironment = this.videoInterfaceManager
+      ? this.videoInterfaceManager.runtimeEnvironment({ requireConfigured: requireProvider })
+      : {};
     return {
       ...process.env,
       REPLICATION_FFMPEG: this.ffmpeg,
-      REPLICATION_FFPROBE: this.ffprobe
+      REPLICATION_FFPROBE: this.ffprobe,
+      ...providerEnvironment
     };
   }
 
@@ -432,6 +448,9 @@ class RunManager extends EventEmitter {
 
   async prepareRun(videoPath) {
     const input = normalizePrepareInput(videoPath);
+    if (this.videoInterfaceManager) {
+      this.videoInterfaceManager.runtimeEnvironment({ requireConfigured: true });
+    }
     if (!input.videoPath) {
       throw new Error("缺少源视频。");
     }
@@ -478,6 +497,7 @@ class RunManager extends EventEmitter {
       logPath: null
     }));
 
+    const providerConfig = this.providerConfig();
     let run = {
       id: runId,
       actionId: "video.replication.generate.v1",
@@ -508,7 +528,9 @@ class RunManager extends EventEmitter {
       },
       authorization: {
         required: true,
-        provider: "Kuaizi / Seedance 2.0",
+        provider: providerConfig.providerName,
+        model: providerConfig.model,
+        interfaceConfigured: providerConfig.configured,
         jobCount: 3,
         grantedAt: null,
         feeDisclosure: "供应商按账户实时价格扣费；Replication 不会在授权前提交。"
@@ -601,6 +623,9 @@ class RunManager extends EventEmitter {
     }
     if (run.variants.length !== 3 || run.variants.some((variant) => !variant.contractPath)) {
       throw new Error("必须先准备完整的 3 份生成合同。");
+    }
+    if (this.videoInterfaceManager) {
+      this.videoInterfaceManager.runtimeEnvironment({ requireConfigured: true });
     }
 
     run.authorization.grantedAt = nowIso();
@@ -708,6 +733,7 @@ class RunManager extends EventEmitter {
       sourceCapability: "seedance-face-swap",
       sourceSkills: ["golden-three-second-hook", "hook-only-rewriter", "seedance-face-swap"],
       providerTaskId: finishedVariant.providerTaskId || null,
+      provider: run.authorization?.provider || "外部视频接口",
       createdAt: nowIso(),
       validated: true,
       metadata,
@@ -741,7 +767,7 @@ class RunManager extends EventEmitter {
         {
           cwd: path.dirname(variant.contractPath),
           env: {
-            ...this.pythonEnvironment(),
+            ...this.pythonEnvironment({ requireProvider: true }),
             REPLICATION_FACE_SWAP_SUBMITTER: path.join(
               this.skillRoot,
               "scripts",
@@ -789,7 +815,7 @@ class RunManager extends EventEmitter {
         }
         if (code !== 0) {
           finishedVariant.state = "failed";
-          finishedVariant.error = `Seedance 执行退出，代码 ${code}。`;
+          finishedVariant.error = `视频接口执行退出，代码 ${code}。`;
           this.save(run);
           reject(new Error(finishedVariant.error));
           return;
@@ -910,7 +936,7 @@ class RunManager extends EventEmitter {
             return;
           }
           finishedVariant.state = "failed";
-          finishedVariant.error = `Seedance 恢复轮询退出，代码 ${code}。`;
+          finishedVariant.error = `视频接口恢复轮询退出，代码 ${code}。`;
           finishedVariant.statusMessage = null;
           this.save(run);
           reject(new Error(finishedVariant.error));

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Minimal credential and upload client used by Replication's packaged runtime."""
+"""Configurable video-interface client used by Replication's packaged runtime.
+
+The historical filename is kept so older release bundles can still import it.
+The public interface is provider-neutral and receives endpoints through config.
+"""
 
 from __future__ import annotations
 
@@ -13,8 +17,10 @@ from typing import Any
 import requests
 
 
-BASE_CONSOLE = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/v1"
-BASE_API = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/api/v3"
+LEGACY_BASE_CONSOLE = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/v1"
+LEGACY_BASE_API = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/api/v3"
+BASE_CONSOLE = os.environ.get("VIDEO_UPLOAD_BASE") or LEGACY_BASE_CONSOLE
+BASE_API = os.environ.get("VIDEO_API_BASE") or LEGACY_BASE_API
 
 
 def default_credentials_path() -> Path:
@@ -78,13 +84,37 @@ def redact(obj: Any) -> Any:
     return obj
 
 
-class KuaiziClient:
+class VideoApiClient:
     def __init__(self) -> None:
         stored = load_private_credentials()
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "replication/0.3"})
-        self.console_token = os.environ.get("KUAIZI_CONSOLE_TOKEN") or stored.get("console_token")
-        self.api_key = os.environ.get("KUAIZI_API_KEY") or stored.get("api_key")
+        self.session.headers.update({"User-Agent": "replication/2.1"})
+        self.provider_name = (
+            os.environ.get("VIDEO_INTERFACE_NAME")
+            or stored.get("provider_name")
+            or "video interface"
+        )
+        self.console_base = (
+            os.environ.get("VIDEO_UPLOAD_BASE")
+            or stored.get("upload_base")
+            or BASE_CONSOLE
+        ).rstrip("/")
+        self.api_base = (
+            os.environ.get("VIDEO_API_BASE")
+            or stored.get("api_base")
+            or BASE_API
+        ).rstrip("/")
+        self.console_token = (
+            os.environ.get("VIDEO_UPLOAD_TOKEN")
+            or os.environ.get("KUAIZI_CONSOLE_TOKEN")
+            or stored.get("upload_token")
+            or stored.get("console_token")
+        )
+        self.api_key = (
+            os.environ.get("VIDEO_API_KEY")
+            or os.environ.get("KUAIZI_API_KEY")
+            or stored.get("api_key")
+        )
         self.username = os.environ.get("KUAIZI_USERNAME") or stored.get("username")
         self.password = os.environ.get("KUAIZI_PASSWORD") or stored.get("password")
 
@@ -105,14 +135,16 @@ class KuaiziClient:
         return data
 
     def authorize(self) -> None:
+        if self.api_key and not self.console_token:
+            self.console_token = self.api_key
         if not self.console_token:
             if not self.username or not self.password:
                 raise RuntimeError(
-                    "Configure KUAIZI_USERNAME/KUAIZI_PASSWORD, KUAIZI_CONSOLE_TOKEN, "
+                    "Configure VIDEO_API_KEY and VIDEO_UPLOAD_TOKEN in the app, "
                     f"or the private credential file at {credentials_path()}."
                 )
             login = self.post_json(
-                f"{BASE_CONSOLE}/login",
+                f"{self.console_base}/login",
                 body={"username": self.username, "password": self.password},
             )
             self.console_token = pick(login, ["token", "access_token", "jwt", "authorization"])
@@ -121,7 +153,7 @@ class KuaiziClient:
 
         if not self.api_key:
             listing = self.post_json(
-                f"{BASE_CONSOLE}/console/api_key/list",
+                f"{self.console_base}/console/api_key/list",
                 headers=self.console_headers,
                 body={"page": 1, "page_size": 20},
             )
@@ -131,7 +163,7 @@ class KuaiziClient:
                 match = re.search(r"(sk-[A-Za-z0-9_-]{20,}|[A-Za-z0-9_-]{32,})", text)
                 self.api_key = match.group(1) if match else None
             if not self.api_key:
-                raise RuntimeError("No API key was found in the Kuaizi account.")
+                raise RuntimeError(f"No API key was found for {self.provider_name}.")
 
     @property
     def console_headers(self) -> dict[str, str]:
@@ -156,7 +188,7 @@ class KuaiziClient:
             content_type = "image/png"
 
         signed = self.post_json(
-            f"{BASE_CONSOLE}/file/sign_upload",
+            f"{self.console_base}{os.environ.get('VIDEO_SIGN_UPLOAD_PATH', '/file/sign_upload')}",
             headers=self.console_headers,
             body={
                 "file_name": name,
@@ -172,7 +204,7 @@ class KuaiziClient:
         download_url = pick(data, ["download_url", "downloadUrl", "url"])
         file_id = pick(data, ["file_id", "fileId", "id"])
         if not upload_url or not download_url:
-            raise RuntimeError("Kuaizi sign_upload did not return upload/download URLs.")
+            raise RuntimeError(f"{self.provider_name} upload interface did not return upload/download URLs.")
 
         with path.open("rb") as handle:
             uploaded = requests.put(
@@ -190,3 +222,7 @@ class KuaiziClient:
             "content_type": content_type,
             "size": path.stat().st_size,
         }
+
+
+# Backward-compatible import name for older submitters and saved recovery tasks.
+KuaiziClient = VideoApiClient

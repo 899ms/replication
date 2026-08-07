@@ -1,6 +1,6 @@
 # 工作台复刻 2.0
 
-工作台复刻 2.0 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，一次生成 3 个 Seedance 身份替换版本：
+工作台复刻 2.0 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，通过你自己配置的视频接口一次生成 3 个身份替换版本：
 
 1. 黄金三秒开场；
 2. 冲击链开场；
@@ -8,7 +8,22 @@
 
 原故事、场景、镜头逻辑和中心含义保持锁定。
 
-左侧工作区还包含 MiniMax H3 模组。该模组会读取当前视频、人物图和音色参考，并提供三种连接入口：
+## 视频接口
+
+左侧“视频接口”是生成后端的统一入口。使用者需要填写自己的：
+
+- 接口名称；
+- 视频 API Base URL；
+- 素材上传 Base URL；
+- 任务路径与模型名称；
+- API Key；
+- 可选的独立上传 Token。
+
+Replication 不附带任何开发者账号或密钥，也不绑定单一供应商。当前内置运行 Adapter 支持 Replication / Seedance 兼容任务协议：素材上传接口需要返回签名上传地址，生成接口需要返回可轮询的任务 ID。其他请求协议可以在 `runtime/seedance-face-swap/scripts/` 增加 Adapter，无需修改视频复刻主工作流。
+
+API Key 和上传 Token 通过 Electron `safeStorage` 加密，只在主进程提交任务时注入运行环境，不会返回页面、写入日志或提交到仓库。
+
+“视频接口”工作区还包含可选的 MiniMax H3 模组。该模组会读取当前视频、人物图和音色参考，并提供三种连接入口：
 
 - 本机 ComfyUI：真实检测 6006/8188 服务以及 H3 生成模型、文本编码器、视频 VAE 和音频 VAE。
 - SSH 服务器：保存主机、端口、用户名、远程工作目录和本机私钥路径，使用 `BatchMode` 做无密码连通测试。
@@ -22,12 +37,12 @@
 普通使用者请从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载：
 
 ```text
-Replication-0.3.0-windows-x64.zip
+Replication-2.0.2-windows-x64.zip
 ```
 
 完整解压后：
 
-1. 双击 `Configure-Account.cmd`，输入使用者自己的筷子 / Seedance 账号；
+1. 双击 `Configure-Account.cmd`，输入使用者自己的兼容视频接口；也可以直接在 APP 左侧“视频接口”中配置；
 2. 双击 `Replication.exe`；
 3. 选择本地视频、替换人物图和音色参考。
 
@@ -46,14 +61,14 @@ MeowLoad 仍是可选组件：只有“粘贴视频链接导入”需要；直�
 
 ## macOS / 源码运行
 
-Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `工作台复刻-2.0.1-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
+Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `Replication-2.0.2-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
 
 要求：
 
 - Node.js 22.12 或更新版本；
 - Python 3；
 - FFmpeg（`ffmpeg` 和 `ffprobe`）；
-- 有 Seedance 权限的筷子账号；
+- 一个兼容的视频生成接口及使用者自己的 API Key；
 - 可选 MeowLoad，用于粘贴链接导入。
 
 ```bash
@@ -68,7 +83,7 @@ npm start
 
 如果 FFmpeg 已安装，可跳过 `brew install ffmpeg`。`npm run setup:python` 只创建仓库内的 `.venv`，不会修改系统 Python。
 
-## 私人账号配置
+## 私人视频接口配置
 
 源码运行时执行：
 
@@ -81,23 +96,17 @@ npm run configure
 - Windows：`%APPDATA%\Replication\credentials.json`
 - macOS / Linux：`~/.config/replication/credentials.json`
 
-支持两种配置：
-
-- `username` 和 `password`；
-- `console_token` 和 `api_key`。
+配置文件支持：`provider_name`、`api_base`、`upload_base`、`model`、`api_key` 和 `upload_token`。推荐直接使用 APP 左侧“视频接口”，密钥会进入系统加密存储；命令行配置文件仅用于便携版兼容。
 
 也可使用环境变量：
 
 ```bash
-export KUAIZI_USERNAME="..."
-export KUAIZI_PASSWORD="..."
-```
-
-或：
-
-```bash
-export KUAIZI_CONSOLE_TOKEN="..."
-export KUAIZI_API_KEY="..."
+export VIDEO_INTERFACE_NAME="My video provider"
+export VIDEO_API_BASE="https://video-api.example.com/v1"
+export VIDEO_UPLOAD_BASE="https://upload-api.example.com/v1"
+export VIDEO_API_MODEL="your-video-model"
+export VIDEO_API_KEY="..."
+export VIDEO_UPLOAD_TOKEN="..."
 ```
 
 如需修改配置文件位置，可设置 `REPLICATION_CREDENTIALS_FILE`。请勿把真实值提交进仓库。
@@ -138,7 +147,7 @@ GitHub Actions 工作流会在真实 Windows runner 上完成依赖下载、SHA-
 
 ## 付费边界
 
-准备合约是本地免费操作。提交一次运行会创建恰好 3 个外部 Seedance 任务，可能产生费用。
+准备合约是本地免费操作。提交一次运行会通过当前视频接口创建恰好 3 个外部任务，可能产生费用。
 
 APP 会保持在 `waiting_authorization`，直到使用者明确确认当前这 3 条任务。只有真实 MP4 已下载且通过媒体校验后才会显示成功；关闭 APP 不会自动重复提交。
 

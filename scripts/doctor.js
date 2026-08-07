@@ -51,6 +51,7 @@ function credentialsState() {
       homeDir: os.homedir()
     });
   const hasEnvironment =
+    Boolean(process.env.VIDEO_API_BASE && process.env.VIDEO_API_KEY) ||
     Boolean(process.env.KUAIZI_CONSOLE_TOKEN && process.env.KUAIZI_API_KEY) ||
     Boolean(process.env.KUAIZI_USERNAME && process.env.KUAIZI_PASSWORD);
   return { configured, ready: hasEnvironment || fs.existsSync(configured) };
@@ -102,7 +103,7 @@ const ffprobe = resolveExecutable([
 ]);
 checks.push({ name: "ffprobe", required: true, ok: Boolean(ffprobe) });
 const credentials = credentialsState();
-checks.push({ name: "Kuaizi credentials", required: false, ok: credentials.ready });
+checks.push({ name: "video interface credentials", required: false, ok: credentials.ready });
 const meowload = resolveExecutable([
   process.env.REPLICATION_MEOWLOAD,
   "/opt/homebrew/bin/MeowLoad",

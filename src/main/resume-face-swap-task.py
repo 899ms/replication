@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resume an already submitted Kuaizi / Seedance face-swap task.
+"""Resume an already submitted video-interface face-swap task.
 
 This adapter intentionally never creates a new provider task. It only polls the
 saved task id, downloads the terminal video, and runs the existing QA script.
@@ -81,9 +81,10 @@ def main() -> int:
     submitter.append_event(manifest, "resume_started", task_id=args.task_id)
     write_json(manifest_path, manifest)
 
-    client = runner.KuaiziClient()
+    client_class = getattr(runner, "VideoApiClient", None) or getattr(runner, "KuaiziClient")
+    client = client_class()
     client.authorize()
-    task_endpoint = submitter.endpoint_url(runner)
+    task_endpoint = submitter.endpoint_url(runner, client)
     poll_url = submitter.task_status_url(task_endpoint, args.task_id)
 
     last: dict[str, Any] = {}
@@ -105,7 +106,7 @@ def main() -> int:
             break
         time.sleep(args.poll_interval)
 
-    poll_path = out_dir / f"kuaizi_seedance2_{row_slug}_poll_response.json"
+    poll_path = out_dir / f"video_api_{row_slug}_poll_response.json"
     write_json(poll_path, last)
     final_status = str(last.get("status") or submitter.pick(last, ["status"]) or "")
     submitter.append_event(manifest, "resume_poll_finished", status=final_status, poll_response=str(poll_path))
@@ -128,7 +129,7 @@ def main() -> int:
     video_url = submitter.find_video_url(last)
     if not video_url:
         raise RuntimeError("Task succeeded but no video URL was returned.")
-    (out_dir / f"kuaizi_seedance2_{row_slug}_video_url.txt").write_text(
+    (out_dir / f"video_api_{row_slug}_video_url.txt").write_text(
         video_url,
         encoding="utf-8",
     )

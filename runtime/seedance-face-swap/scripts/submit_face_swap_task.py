@@ -24,7 +24,7 @@ DEFAULT_BASE_API = "https://aiopenapi.kuaizi.cn/ai-open-platform-api/api/v3"
 def load_runner() -> Any:
     spec = importlib.util.spec_from_file_location("replication_kuaizi_runtime", RUNTIME_CLIENT)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load packaged Kuaizi runtime: {RUNTIME_CLIENT}")
+        raise RuntimeError(f"Cannot load packaged video-interface runtime: {RUNTIME_CLIENT}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -82,11 +82,16 @@ def redact(obj: Any) -> Any:
     return obj
 
 
-def endpoint_url(runner: Any) -> str:
-    explicit = os.environ.get("SEEDANCE_TASKS_ENDPOINT")
+def endpoint_url(runner: Any, client: Any | None = None) -> str:
+    explicit = os.environ.get("VIDEO_TASKS_ENDPOINT") or os.environ.get("SEEDANCE_TASKS_ENDPOINT")
     if explicit:
         return explicit
-    base = os.environ.get("SEEDANCE_API_BASE") or getattr(runner, "BASE_API", DEFAULT_BASE_API)
+    base = (
+        os.environ.get("VIDEO_API_BASE")
+        or os.environ.get("SEEDANCE_API_BASE")
+        or getattr(client, "api_base", None)
+        or getattr(runner, "BASE_API", DEFAULT_BASE_API)
+    )
     return base.rstrip("/") + "/contents/generations/tasks"
 
 
@@ -136,9 +141,12 @@ def preflight(contract: dict[str, Any], paths: dict[str, Path | None], out_dir: 
         inspection = load_json(inspection_path)
         for item in inspection.get("hard_stops", []):
             hard_stops.append(f"inspection_report hard stop: {item}")
-    task_file = out_dir / f"kuaizi_seedance2_{clean_id(str(contract.get('row_id') or 'FACE-SWAP'))}_task_id.txt"
-    if args.submit and task_file.exists() and not args.force_submit:
-        hard_stops.append(f"task id already exists; use --force-submit only after explicit rerun request: {task_file}")
+    existing_task_files = list(out_dir.glob("*_task_id.txt"))
+    if args.submit and existing_task_files and not args.force_submit:
+        hard_stops.append(
+            "task id already exists; use --force-submit only after explicit rerun request: "
+            + str(existing_task_files[0])
+        )
     return hard_stops
 
 
@@ -216,7 +224,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     row_id = str(contract.get("row_id") or "FACE-SWAP")
     row_slug = clean_id(row_id)
-    task_file = out_dir / f"kuaizi_seedance2_{row_slug}_task_id.txt"
+    task_file = out_dir / f"video_api_{row_slug}_task_id.txt"
     paths = contract_paths(contract)
     hard_stops = preflight(contract, paths, out_dir, args)
 
@@ -247,7 +255,7 @@ def main() -> int:
     prompt = paths["final_prompt_file"].read_text(encoding="utf-8")
     generation = contract.get("generation") if isinstance(contract.get("generation"), dict) else {}
     request_body = {
-        "model": generation.get("model") or DEFAULT_MODEL,
+        "model": os.environ.get("VIDEO_API_MODEL") or generation.get("model") or DEFAULT_MODEL,
         "content": [
             {"type": "text", "text": prompt},
             {"type": "video_url", "role": "reference_video", "video_url": {"url": "<uploaded_reference_video_url>"}},
@@ -283,7 +291,8 @@ def main() -> int:
         return 0
 
     runner = load_runner()
-    client = runner.KuaiziClient()
+    client_class = getattr(runner, "VideoApiClient", None) or getattr(runner, "KuaiziClient")
+    client = client_class()
     client.authorize()
     append_event(manifest, "authorized")
     write_json(out_dir / "manifest.json", manifest)
@@ -301,10 +310,10 @@ def main() -> int:
     write_json(out_dir / "manifest.json", manifest)
 
     request_body["content"] = build_content(prompt, uploads)
-    write_json(out_dir / f"kuaizi_seedance2_{row_slug}_request_redacted.json", redact(request_body))
-    task_endpoint = endpoint_url(runner)
+    write_json(out_dir / f"video_api_{row_slug}_request_redacted.json", redact(request_body))
+    task_endpoint = endpoint_url(runner, client)
     create = client.post_json(task_endpoint, headers=client.api_headers, body=request_body)
-    write_json(out_dir / f"kuaizi_seedance2_{row_slug}_create_response.json", create)
+    write_json(out_dir / f"video_api_{row_slug}_create_response.json", create)
     task_id = pick(create, ["id", "task_id", "taskId"])
     if not task_id:
         raise RuntimeError("Generation response did not include a task id.")
@@ -326,7 +335,7 @@ def main() -> int:
         if status in {"succeeded", "failed", "cancelled", "canceled"}:
             break
         time.sleep(args.poll_interval)
-    poll_path = out_dir / f"kuaizi_seedance2_{row_slug}_poll_response.json"
+    poll_path = out_dir / f"video_api_{row_slug}_poll_response.json"
     write_json(poll_path, last)
     status = str(last.get("status") or pick(last, ["status"]) or "")
     append_event(manifest, "poll_finished", status=status, poll_response=str(poll_path))
@@ -348,7 +357,7 @@ def main() -> int:
     video_url = find_video_url(last)
     if not video_url:
         raise RuntimeError("Task succeeded but no video URL was returned.")
-    (out_dir / f"kuaizi_seedance2_{row_slug}_video_url.txt").write_text(video_url, encoding="utf-8")
+    (out_dir / f"video_api_{row_slug}_video_url.txt").write_text(video_url, encoding="utf-8")
     video_path = out_dir / f"{row_slug}_seedance2_{request_body['resolution']}_{request_body['duration']}s.mp4"
     downloaded = client.session.get(video_url, timeout=300)
     if downloaded.status_code >= 400:
