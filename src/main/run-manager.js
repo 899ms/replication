@@ -455,7 +455,7 @@ class RunManager extends EventEmitter {
       throw new Error("缺少源视频。");
     }
     if (!input.personImagePath) {
-      throw new Error("必须选择替换人物图；Replication 不再使用固定内置人物。");
+      throw new Error("必须选择替换人物图；ReplicaPilot 不再使用固定内置人物。");
     }
     if (!input.audioReferencePath) {
       throw new Error("必须选择音色参考；替换人物时需要同时替换音色。");
@@ -533,7 +533,7 @@ class RunManager extends EventEmitter {
         interfaceConfigured: providerConfig.configured,
         jobCount: 3,
         grantedAt: null,
-        feeDisclosure: "供应商按账户实时价格扣费；Replication 不会在授权前提交。"
+        feeDisclosure: "供应商按账户实时价格扣费；ReplicaPilot 不会在授权前提交。"
       },
       variants,
       artifacts: [],
@@ -568,7 +568,7 @@ class RunManager extends EventEmitter {
             "--final-prompt-file",
             promptPath,
             "--title",
-            `Replication · ${variant.title}`,
+            `ReplicaPilot · ${variant.title}`,
             "--row-id",
             `REPLICATION-${runId}-${variant.index}`,
             "--out-dir",

@@ -54,10 +54,10 @@ test("desktop workbench opens at the enlarged dimensions", () => {
   assert.match(main, /minWidth:\s*1180/);
 });
 
-test("2.0.2 product version keeps the 2.0 workbench branding", () => {
+test("2.0.2 product version uses the ReplicaPilot product brand", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
   assert.equal(pkg.version, "2.0.2");
-  assert.match(html, /<title>工作台复刻 2\.0<\/title>/);
-  assert.match(html, /DESKTOP WORKBENCH · 2\.0/);
-  assert.match(main, /title:\s*"工作台复刻 2\.0"/);
+  assert.match(html, /<title>ReplicaPilot<\/title>/);
+  assert.match(html, /REPLICAPILOT · DESKTOP VIDEO LAB/);
+  assert.match(main, /title:\s*"ReplicaPilot"/);
 });

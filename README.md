@@ -1,73 +1,89 @@
-# 工作台复刻 2.0
+<p align="center">
+  <img src="assets/icon-1024.png" width="104" alt="ReplicaPilot app icon" />
+</p>
 
-工作台复刻 2.0 是一款桌面端视频复刻工具：输入一条短视频、替换人物图和音色参考，通过你自己配置的视频接口一次生成 3 个身份替换版本：
+<h1 align="center">ReplicaPilot</h1>
 
-1. 黄金三秒开场；
-2. 冲击链开场；
-3. 异常转折开场。
+<p align="center"><strong>AI 视频复刻工作台</strong></p>
+<p align="center">一条视频输入，三个受控复刻版本输出。</p>
 
-原故事、场景、镜头逻辑和中心含义保持锁定。
+<p align="center">
+  <img src="docs/images/replicapilot-hero.png" alt="ReplicaPilot：一条视频输入，三个受控复刻版本输出" />
+</p>
 
-## 视频接口
+<p align="center">
+  <img alt="Version 2.0.2" src="https://img.shields.io/badge/version-2.0.2-7da2ff" />
+  <img alt="macOS Apple silicon" src="https://img.shields.io/badge/macOS-Apple%20silicon-111a2b" />
+  <img alt="Windows 10 and 11 x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-111a2b" />
+  <img alt="39 automated tests passing" src="https://img.shields.io/badge/tests-39%20passing-247a5a" />
+</p>
 
-左侧“视频接口”是生成后端的统一入口。使用者需要填写自己的：
+ReplicaPilot 是一款桌面端 AI 视频复刻工具。输入一条竖屏口播视频，再选择替换人物图和音色参考，它会通过使用者自己配置的视频接口准备并生成三个受控版本。
 
-- 接口名称；
-- 视频 API Base URL；
-- 素材上传 Base URL；
-- 任务路径与模型名称；
-- API Key；
-- 可选的独立上传 Token。
+原视频的中心含义、产品事实、场景连续性和中段主要内容保持锁定；人物身份、音色、0–3 秒起手和收尾方向按版本合同受控调整。
 
-Replication 不附带任何开发者账号或密钥，也不绑定单一供应商。当前内置运行 Adapter 支持 Replication / Seedance 兼容任务协议：素材上传接口需要返回签名上传地址，生成接口需要返回可轮询的任务 ID。其他请求协议可以在 `runtime/seedance-face-swap/scripts/` 增加 Adapter，无需修改视频复刻主工作流。
+## 一眼看懂
 
-API Key 和上传 Token 通过 Electron `safeStorage` 加密，只在主进程提交任务时注入运行环境，不会返回页面、写入日志或提交到仓库。
+| 环节 | 内容 |
+| --- | --- |
+| 输入 | 1 条最长 15 秒的竖屏视频 + 1 张替换人物图 + 1 段音色参考 |
+| 处理 | 本地预检、三版本合同生成、当次付费授权、远端任务恢复 |
+| 输出 | 黄金三秒起手、冲击链起手、反常转折起手，共 3 个竖屏版本 |
+| 完成标准 | 真实 MP4 已下载，并通过时长、画幅、音轨和媒体可读性校验 |
 
-“视频接口”工作区还包含可选的 MiniMax H3 模组。该模组会读取当前视频、人物图和音色参考，并提供三种连接入口：
+## 产品界面
 
-- 本机 ComfyUI：真实检测 6006/8188 服务以及 H3 生成模型、文本编码器、视频 VAE 和音频 VAE。
-- SSH 服务器：保存主机、端口、用户名、远程工作目录和本机私钥路径，使用 `BatchMode` 做无密码连通测试。
-- H3 API：输入 API Base URL、模型名称和 API Key；API Key 通过 Electron `safeStorage` 加密，不写入仓库、日志或前端配置。
-- 官方模型下载：列出 Comfy-Org/MiniMax-H3 的 R2V 生成模型、文本编码器及视音频 VAE，可逐项或一键在默认浏览器开始下载，并显示目标 ComfyUI 目录与本机安装状态。
+### 视频复刻主工作台
 
-可通过 `REPLICATION_MINIMAX_H3_URL` 和 `REPLICATION_MINIMAX_H3_COMFY_ROOT` 覆盖默认本机连接与工作区路径，也可通过 `MINIMAX_H3_API_KEY` 从环境变量提供 API 凭据。真实付费任务在提交前仍需要当次明确授权。
+![ReplicaPilot 视频复刻主工作台](docs/images/replicapilot-workbench.png)
 
-## Windows 便携版
+### 视频接口与本地运行模组
 
-普通使用者请从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载：
+![ReplicaPilot 视频接口页面](docs/images/replicapilot-video-interface.png)
 
-```text
-Replication-2.0.2-windows-x64.zip
-```
+## 三个受控版本
+
+| 版本 | 0–3 秒策略 | 保持不变的内容 |
+| --- | --- | --- |
+| 黄金三秒起手 | 第一帧直接进入可见事件，用“主体 + 场景 + 冲突”形成因果变化 | 原产品、场景、中心含义与后续主要内容 |
+| 冲击链起手 | 触发失控 → 可见损失 → 声音或物理反馈 → 人物反应 → 方法进入 | 原事实、原证明点与原始回报 |
+| 反常转折起手 | 用符合原场景的反常行为、社交碰撞或规则压力制造转折 | 原故事逻辑、替换人物身份与替换音色 |
+
+三个版本都固定输出为竖屏 9:16。ReplicaPilot 不会新增平台 CTA、价格、用户名、水印或未经来源支持的产品主张。
+
+## 能力边界
+
+- 包含：本地视频导入、人物与音色替换、三种起手策略、运行记录、任务恢复、真实产物校验。
+- 可选：通过 MeowLoad 粘贴视频链接导入；通过 MiniMax H3 接入本机 ComfyUI、SSH 服务器或 H3 API。
+- 不包含：市场研究、账号管理、数据分析、自动发布、内容库和时间线剪辑器。
+- 费用边界：准备合约是本地免费操作；提交运行会创建恰好 3 个外部生成任务，必须经过当次明确授权。
+
+## 下载
+
+普通使用者请从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载当前版本：
+
+- Windows 10/11 x64：`Replication-2.0.2-windows-x64.zip`
+- macOS Apple silicon：`Replication-2.0.2-macOS-arm64.zip`
+
+`ReplicaPilot` 是产品品牌；仓库名、兼容协议和当前 2.0.2 发布包继续保留 `Replication` 技术标识，避免破坏既有配置与下载链接。
+
+### Windows 便携版
 
 完整解压后：
 
-1. 双击 `Configure-Account.cmd`，输入使用者自己的兼容视频接口；也可以直接在 APP 左侧“视频接口”中配置；
-2. 双击 `Replication.exe`；
+1. 双击 `Configure-Account.cmd`，填写自己的兼容视频接口；也可以稍后在 APP 左侧“视频接口”中配置。
+2. 双击 `Replication.exe`。
 3. 选择本地视频、替换人物图和音色参考。
 
-Windows 发布包已内置：
+Windows 发布包已经内置 Python 3.13、`requests`、FFmpeg、ffprobe 和生成运行脚本，不需要另装 Node.js、Python 或 FFmpeg。当前包未购买代码签名证书，SmartScreen 可能提示“未知发布者”；请只从本仓库 Releases 下载。
 
-- Python 3.13；
-- Python `requests` 及其依赖；
-- FFmpeg 和 ffprobe；
-- Replication 的生成运行脚本。
+### macOS / 源码运行
 
-因此接收者不需要安装 Node.js、Python、pip、FFmpeg，也不会依赖开发者电脑上的 `/Users/...` 路径。API Key、Token、账号、密码、Cookie 和私人配置不会放进仓库或发布包。
-
-当前 Windows 包未购买代码签名证书，SmartScreen 可能提示“未知发布者”。请只从本仓库 Releases 下载。Windows 便携包支持 Windows 10/11 x64。
-
-MeowLoad 仍是可选组件：只有“粘贴视频链接导入”需要；直接选择本地视频不需要。
-
-## macOS / 源码运行
-
-Apple silicon 用户可以直接从 [GitHub Releases](https://github.com/francoeur003/replication/releases) 下载 `Replication-2.0.2-macOS-arm64.zip`。当前 macOS 包采用临时签名，尚未经过 Apple 公证。
-
-要求：
+当前 macOS 包采用临时签名，尚未经过 Apple 公证。源码运行要求：
 
 - Node.js 22.12 或更新版本；
 - Python 3；
-- FFmpeg（`ffmpeg` 和 `ffprobe`）；
+- FFmpeg 与 ffprobe；
 - 一个兼容的视频生成接口及使用者自己的 API Key；
 - 可选 MeowLoad，用于粘贴链接导入。
 
@@ -81,11 +97,26 @@ npm run doctor
 npm start
 ```
 
-如果 FFmpeg 已安装，可跳过 `brew install ffmpeg`。`npm run setup:python` 只创建仓库内的 `.venv`，不会修改系统 Python。
+如果 FFmpeg 已安装，可以跳过 `brew install ffmpeg`。`npm run setup:python` 只创建仓库内的 `.venv`，不会修改系统 Python。
 
-## 私人视频接口配置
+## 视频接口
 
-源码运行时执行：
+左侧“视频接口”是生成后端的统一入口。使用者需要填写自己的：
+
+- 接口名称；
+- 视频 API Base URL；
+- 素材上传 Base URL；
+- 任务路径与模型名称；
+- API Key；
+- 可选的独立上传 Token。
+
+ReplicaPilot 不附带开发者账号或密钥，也不绑定单一供应商。当前 Adapter 支持 Replication / Seedance 兼容任务协议：素材上传接口返回签名上传地址，生成接口返回可轮询的任务 ID。其他协议可以在 `runtime/seedance-face-swap/scripts/` 增加 Adapter，无需改写视频复刻主工作流。
+
+API Key 和上传 Token 通过 Electron `safeStorage` 加密，只在主进程提交任务时注入运行环境，不会返回页面、写入日志或提交到仓库。
+
+### 私人接口配置
+
+推荐直接使用 APP 左侧“视频接口”。需要命令行配置时运行：
 
 ```bash
 npm run configure
@@ -96,9 +127,7 @@ npm run configure
 - Windows：`%APPDATA%\Replication\credentials.json`
 - macOS / Linux：`~/.config/replication/credentials.json`
 
-配置文件支持：`provider_name`、`api_base`、`upload_base`、`model`、`api_key` 和 `upload_token`。推荐直接使用 APP 左侧“视频接口”，密钥会进入系统加密存储；命令行配置文件仅用于便携版兼容。
-
-也可使用环境变量：
+也可以使用环境变量：
 
 ```bash
 export VIDEO_INTERFACE_NAME="My video provider"
@@ -109,7 +138,18 @@ export VIDEO_API_KEY="..."
 export VIDEO_UPLOAD_TOKEN="..."
 ```
 
-如需修改配置文件位置，可设置 `REPLICATION_CREDENTIALS_FILE`。请勿把真实值提交进仓库。
+如需修改配置文件位置，可设置 `REPLICATION_CREDENTIALS_FILE`。不要把真实凭据提交进仓库。
+
+## MiniMax H3 可选模组
+
+“视频接口”工作区包含可选的 MiniMax H3 模组：
+
+- 本机 ComfyUI：检测 6006/8188 服务，以及 H3 生成模型、文本编码器、视频 VAE 和音频 VAE。
+- SSH 服务器：保存主机、端口、用户名、远程工作目录和本机私钥路径，并使用 `BatchMode` 做无密码连通测试。
+- H3 API：输入 API Base URL、模型名称和 API Key；密钥通过 `safeStorage` 加密。
+- 官方模型下载：列出 Comfy-Org/MiniMax-H3 的 R2V 模型、文本编码器和视音频 VAE，并显示目标目录与安装状态。
+
+可以通过 `REPLICATION_MINIMAX_H3_URL` 和 `REPLICATION_MINIMAX_H3_COMFY_ROOT` 覆盖默认本机连接与工作区路径，也可以通过 `MINIMAX_H3_API_KEY` 从环境变量提供 API 凭据。
 
 ## 测试
 
@@ -119,7 +159,7 @@ npm test
 npm start
 ```
 
-本地集成测试只准备 3 份 dry-run 合约，不会提交付费任务：
+本地集成测试只准备 3 份 dry-run 合约，不提交付费任务：
 
 ```bash
 npm run test:integration -- \
@@ -136,20 +176,14 @@ macOS Apple silicon：
 npm run build:mac
 ```
 
-Windows x64 请在 PowerShell 中运行：
+Windows x64：
 
 ```powershell
 npm run prepare:win-runtime
 npm run build:win
 ```
 
-GitHub Actions 工作流会在真实 Windows runner 上完成依赖下载、SHA-256 校验、单元测试、依赖自检、打包、应用启动截图和 ZIP 产出。
-
-## 付费边界
-
-准备合约是本地免费操作。提交一次运行会通过当前视频接口创建恰好 3 个外部任务，可能产生费用。
-
-APP 会保持在 `waiting_authorization`，直到使用者明确确认当前这 3 条任务。只有真实 MP4 已下载且通过媒体校验后才会显示成功；关闭 APP 不会自动重复提交。
+GitHub Actions 会在 Windows runner 上完成依赖下载、SHA-256 校验、单元测试、运行依赖自检、打包、应用启动截图和 ZIP 产出。
 
 ## 第三方运行组件
 

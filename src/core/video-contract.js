@@ -29,7 +29,7 @@ function normalizeProbe(probe, fileSize) {
     throw new Error("无法读取有效的视频画面或时长。");
   }
   if (!audio) {
-    throw new Error("视频没有可用音轨；Replication Demo 需要带声音的口播视频。");
+    throw new Error("视频没有可用音轨；ReplicaPilot 需要带声音的口播视频。");
   }
   if (duration > MAX_DURATION_SECONDS) {
     throw new Error(`视频时长为 ${duration.toFixed(1)} 秒；当前 Demo 最长支持 15 秒。`);

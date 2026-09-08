@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 
 const { buildPrompt, getVariants } = require("../src/core/variants");
 
-test("Replication exposes three local-skill hook strategies", () => {
+test("ReplicaPilot exposes three local-skill hook strategies", () => {
   const variants = getVariants();
   assert.equal(variants.length, 3);
   assert.deepEqual(

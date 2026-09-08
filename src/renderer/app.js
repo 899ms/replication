@@ -737,7 +737,7 @@ function updatePrepareAvailability() {
   }
   if (!state.personImagePath) {
     ui.actionTitle.textContent = "需要替换人物";
-    ui.actionHint.textContent = "Replication 不再使用固定内置人物；必须为本次运行选择人物图。";
+    ui.actionHint.textContent = "ReplicaPilot 不再使用固定内置人物；必须为本次运行选择人物图。";
     ui.primaryButton.disabled = true;
     ui.primaryButtonLabel.textContent = "先选择人物图";
     return;

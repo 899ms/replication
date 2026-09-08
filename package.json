@@ -1,7 +1,7 @@
 {
   "name": "replication",
   "version": "2.0.2",
-  "description": "工作台复刻 2.0：视频复刻、运行记录与 MiniMax H3 多入口工作台。",
+  "description": "ReplicaPilot：一条视频输入，三个受控复刻版本输出。",
   "main": "src/main/index.js",
   "author": "abo",
   "license": "UNLICENSED",

@@ -52,7 +52,7 @@ function createWindow() {
     height: 940,
     minWidth: 1180,
     minHeight: 760,
-    title: "工作台复刻 2.0",
+    title: "ReplicaPilot",
     backgroundColor: "#F3F2EC",
     show: false,
     webPreferences: {
