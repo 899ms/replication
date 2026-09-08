@@ -18,6 +18,14 @@
   <img alt="39 automated tests passing" src="https://img.shields.io/badge/tests-39%20passing-247a5a" />
 </p>
 
+<p align="center">
+  <strong>创作者：阿波 Nate</strong> · 抖音号：<code>53691197416</code>
+</p>
+
+<p align="center">
+  <img src="docs/images/douyin-abo-nate.jpg" width="320" alt="阿波 Nate 抖音二维码，抖音号 53691197416" />
+</p>
+
 ReplicaPilot 是一款桌面端 AI 视频复刻工具。输入一条竖屏口播视频，再选择替换人物图和音色参考，它会通过使用者自己配置的视频接口准备并生成三个受控版本。
 
 原视频的中心含义、产品事实、场景连续性和中段主要内容保持锁定；人物身份、音色、0–3 秒起手和收尾方向按版本合同受控调整。
